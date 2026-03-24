@@ -1,0 +1,152 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { ModeSwitch } from "@/components/mode-switch";
+import { ResultPanel } from "@/components/result-panel";
+import { AuditResponse, UserMode } from "@/lib/types";
+import { demoCases } from "@/lib/ui";
+
+export default function HomePage() {
+  const [mode, setMode] = useState<UserMode>("standard");
+  const [message, setMessage] = useState("");
+  const [result, setResult] = useState<AuditResponse | null>(null);
+  const [raw, setRaw] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [showExplain, setShowExplain] = useState(false);
+
+  const containerClass = useMemo(
+    () => (mode === "elder" ? "mx-auto max-w-4xl space-y-6 p-4 text-lg" : "mx-auto max-w-5xl space-y-6 p-4"),
+    [mode]
+  );
+
+  async function handleAudit() {
+    if (!message.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const resp = await fetch("/api/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+      const data = await resp.json();
+      setResult(data);
+      setRaw(JSON.stringify(data, null, 2));
+    } catch {
+      setError("系統目前忙碌，請稍後再試。");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className={containerClass}>
+      <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-trust-700">SCBKR + R-Lock Uncheatable Anti-Fraud System</p>
+        <h1 className={`mt-2 font-bold text-slate-900 ${mode === "elder" ? "text-4xl" : "text-3xl"}`}>SCBKR 智慧防詐小幫手</h1>
+        <p className={`mt-2 text-slate-700 ${mode === "elder" ? "text-2xl" : "text-lg"}`}>一句話，就看出這是不是能信的訊息。</p>
+        <p className="mt-1 text-sm text-slate-500">One message tells whether it is structurally trustworthy.</p>
+        <p className={`mt-4 whitespace-pre-line text-slate-700 ${mode === "elder" ? "text-xl" : "text-sm"}`}>
+          把你收到的簡訊、Line、Email 或任何可疑訊息貼上來。
+          系統會用五個維度審計：主體、因果、邊界、依據、責任。
+          結果分為：安全 / 模糊 / 高風險 / 疑似詐騙，並用白話告訴你：哪裡怪、為什麼怪、為什麼不能直接信。
+        </p>
+      </header>
+
+      <ModeSwitch value={mode} onChange={setMode} />
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <label className="mb-2 block text-sm font-semibold text-slate-700">可疑訊息內容</label>
+        <textarea
+          className={`w-full rounded-xl border border-slate-300 p-4 outline-none ring-trust-300 focus:ring ${mode === "elder" ? "min-h-52 text-xl" : "min-h-44 text-sm"}`}
+          placeholder="請貼上可疑訊息，例如：
+「這裡是XX銀行，您的帳戶有異常，請立即點擊連結更新資料。」"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {demoCases.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setMessage(item.message)}
+              className={`rounded-lg border border-trust-200 bg-trust-50 px-3 py-2 text-trust-700 hover:bg-trust-100 ${mode === "elder" ? "text-lg" : "text-sm"}`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={handleAudit}
+            disabled={loading}
+            className={`rounded-xl bg-trust-500 font-semibold text-white hover:bg-trust-700 disabled:opacity-60 ${mode === "elder" ? "px-8 py-4 text-2xl" : "px-5 py-3 text-sm"}`}
+          >
+            {loading ? "檢查中..." : "立即檢查"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowExplain((v) => !v)}
+            className={`rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 ${mode === "elder" ? "px-8 py-4 text-xl" : "px-5 py-3 text-sm"}`}
+          >
+            查看完整結構（SCBKR 解析）
+          </button>
+        </div>
+        {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+      </section>
+
+      {result && <ResultPanel result={result} mode={mode} message={message} />}
+
+      {result && showExplain && mode !== "elder" && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-trust-700">Explain Mode（SCBKR 解析）</h2>
+          <ul className="mt-3 space-y-2 text-sm text-slate-700">
+            <li>Subject：{result.explain_mode.subject_analysis}</li>
+            <li>Cause：{result.explain_mode.cause_analysis}</li>
+            <li>Boundary：{result.explain_mode.boundary_analysis}</li>
+            <li>Basis：{result.explain_mode.basis_analysis}</li>
+            <li>Responsibility：{result.explain_mode.responsibility_analysis}</li>
+            <li>R-Lock：{result.explain_mode.r_lock_triggered ? "責任不可驗，已觸發升級" : "未觸發"}</li>
+          </ul>
+        </section>
+      )}
+
+      <section className="rounded-2xl border border-trust-100 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-trust-700">這不是在問「像不像詐騙」</h2>
+        <p className="mt-2 text-slate-700">本系統在問：「這段訊息是否具備可驗證的責任結構，足以進入你的決策？」</p>
+        <ul className="mt-3 list-disc space-y-1 pl-6 text-slate-700">
+          <li>SCBKR：拆主語、因果、邊界、依據、責任</li>
+          <li>R-Lock：責任不可驗，直接升級風險</li>
+          <li>Explain mode：用白話告訴你為什麼不能信</li>
+        </ul>
+      </section>
+
+      {mode === "elder" && (
+        <section className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm">
+          <h2 className="text-2xl font-bold text-trust-700">長輩模式範例</h2>
+          <ul className="mt-3 list-disc space-y-2 pl-6 text-lg text-slate-800">
+            <li>先不要信。這則訊息沒講清楚出事要找誰負責，所以不能直接照做。</li>
+            <li>它一直催你快點處理，可是沒有把事情講完整，這種很容易出問題。</li>
+            <li>不要點它給的連結，不要打它給的電話。</li>
+            <li>請直接打開你平常就在用的官方 App，或自己找官方電話查。</li>
+          </ul>
+        </section>
+      )}
+
+      {result && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-700">Admin / Debug</h2>
+          <p className="text-xs text-slate-500">
+            request time: {(result.meta as AuditResponse["meta"] & { latency_ms?: number }).latency_ms ?? "N/A"} ms / model: {result.meta.model} /
+            fallback: {String(result.meta.fallback_used)}
+          </p>
+          <pre className="mt-2 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">{raw}</pre>
+        </section>
+      )}
+    </main>
+  );
+}
