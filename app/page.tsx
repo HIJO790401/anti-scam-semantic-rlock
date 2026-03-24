@@ -55,6 +55,22 @@ export default function HomePage() {
             系統會用五個維度審計：主體、因果、邊界、依據/成本基礎、責任。
             結果分為：安全 / 模糊 / 高風險 / 疑似詐騙，並用白話告訴你：哪裡怪、為什麼怪、為什麼不能直接信。
           </p>
+          <div className="mt-4 rounded-xl border border-trust-200 bg-white/88 p-4 shadow-sm backdrop-blur-[1px]">
+            <div className="flex gap-3">
+              <div className="w-1.5 rounded-full bg-trust-500" />
+              <div>
+                <p className={`font-semibold text-slate-900 ${mode === "elder" ? "text-2xl leading-snug" : "text-base leading-relaxed"}`}>
+                  這不是在判斷它像不像詐騙。<br />
+                  這是在判斷：這段訊息，有沒有資格進入你的決策鏈。
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  This system does not ask only whether a message looks fraudulent.
+                  <br />
+                  It asks whether the message deserves to enter a human decision chain.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -122,6 +138,12 @@ export default function HomePage() {
       <section className="rounded-2xl border border-trust-100 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-trust-700">這不是在問「像不像詐騙」</h2>
         <p className="mt-2 text-slate-700">本系統在問：「這段訊息是否具備可驗證的責任結構，足以進入你的決策？」</p>
+        <p className="mt-2 text-sm text-slate-700">
+          不是只看它像不像詐騙，而是看它是否具備可驗證的責任結構，足以進入決策鏈。
+        </p>
+        <p className="text-xs text-slate-500">
+          Not just fraud similarity, but decision-chain qualification through verifiable responsibility structure.
+        </p>
         <ul className="mt-3 list-disc space-y-1 pl-6 text-slate-700">
           <li>SCBKR：拆主語、因果、邊界、依據/成本基礎、責任</li>
           <li>R-Lock：責任不可驗，直接升級風險</li>
