@@ -1,7 +1,7 @@
 import { RevisionGateResult } from "@/lib/void-engine/types";
 
 export function evaluateRevisionGate(message: string): RevisionGateResult {
-  const hasRevisionClaim = /(我們會修正|我們會改善|我們更新了模型|我們優化了安全|我們修訂了流程|已更新)/i.test(message);
+  const hasRevisionClaim = /(我們會修正|我們會改善|我們更新了模型|我們優化了安全|我們修訂了流程|已更新|已經修正|持續優化)/i.test(message);
   if (!hasRevisionClaim) {
     return { revision_state: null, codes: [] };
   }

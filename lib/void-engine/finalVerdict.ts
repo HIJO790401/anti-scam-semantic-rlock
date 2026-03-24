@@ -13,9 +13,9 @@ function maxRisk(a: RiskLevel, b: RiskLevel): RiskLevel {
   return rank[a] > rank[b] ? a : b;
 }
 
-function computeRiskFloor(scores: ScbkrScore, sensitive: boolean, weakStructure: boolean): RiskLevel {
+function computeRiskFloor(scores: ScbkrScore, sensitive: boolean, weakStructure: boolean, decisionPush: boolean): RiskLevel {
   let risk: RiskLevel = "SAFE";
-  if (scores.S < 0.4 || scores.B < 0.4 || scores.R < 0.4) risk = "RISK";
+  if (decisionPush && (scores.S < 0.4 || scores.B < 0.4 || scores.R < 0.4)) risk = "RISK";
   if (sensitive && weakStructure) risk = "SCAM";
   return risk;
 }
@@ -40,14 +40,19 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
   const governance = detectVoidGovernance(input.message, features);
   const revisionGate = evaluateRevisionGate(input.message);
   const errorTyping = classifyErrorTyping(input.message);
+  const decisionPush =
+    features.hasSensitiveAction || features.hasUrgency || /(請完成|請確認|請點擊|請登入|否則|身份驗證|重新驗證|帳號驗證)/i.test(input.message);
 
   const weakStructure = adjustedScores.S < 0.7 || adjustedScores.B < 0.7 || adjustedScores.R < 0.7;
-  let risk = computeRiskFloor(adjustedScores, features.hasSensitiveAction, weakStructure);
+  let risk = computeRiskFloor(adjustedScores, features.hasSensitiveAction, weakStructure, decisionPush);
   if (rLock.floorRisk) risk = maxRisk(risk, rLock.floorRisk);
 
   const weighted = weightedStructuralScore(adjustedScores);
   if (risk === "SAFE") {
     risk = weighted >= 0.82 ? "SAFE" : weighted >= 0.65 ? "UNCLEAR" : "RISK";
+  }
+  if (!decisionPush && claim.state === "VALID" && !governance.isVoidGovernance && revisionGate.revision_state === null && risk !== "SCAM") {
+    risk = risk === "SAFE" ? "SAFE" : "UNCLEAR";
   }
 
   let finalState: Final2State = determineBaseState(adjustedScores);
@@ -55,9 +60,22 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
 
   const voidReasonCode = [...rLock.reasonCodes, ...claim.codes, ...governance.codes, ...revisionGate.codes];
 
-  if (claim.state === "INVALID") {
+  const hardClaimCodes = new Set([
+    "fakeVerification",
+    "urgentSensitiveRequest",
+    "costCauseVoid",
+    "threatWithoutGround",
+    "grayScam"
+  ]);
+  const hardClaimFail = claim.codes.some((c) => hardClaimCodes.has(c));
+
+  if (claim.state === "INVALID" && hardClaimFail) {
     finalState = "VOID_CLAIM";
     actionGate = "BLOCK";
+  } else if (claim.state === "INVALID") {
+    finalState = "VOID_2";
+    actionGate = "WARN";
+    risk = maxRisk(risk, "UNCLEAR");
   }
   if (governance.isVoidGovernance) {
     finalState = "VOID_GOVERNANCE";
@@ -71,6 +89,10 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
   if (risk === "SCAM" && finalState !== "VOID_GOVERNANCE" && finalState !== "VOID_REVISION" && finalState !== "VOID_CLAIM") {
     finalState = "VARIANT_DANGER";
     actionGate = "BLOCK";
+  }
+
+  if (finalState === "VOID_2" && risk !== "SCAM") {
+    actionGate = "WARN";
   }
 
   const fraudScore = Math.max(input.source.fraud_score, Number((1 - weighted + (risk === "SCAM" ? 0.15 : 0)).toFixed(2)));

@@ -42,16 +42,16 @@ export function weightedStructuralScore(score: ScbkrScore): number {
 export function extractFeatures(message: string): ExtractedFeatures {
   const msg = message || "";
 
-  const hasExternalContactInMessage = /(http|www\.|\.tw|\.com|電話|客服|連結|網址|login|登入|驗證入口|02-\d{4}-\d{4}|\d{2,4}-\d{3,4}-\d{3,4})/i.test(msg);
+  const hasExternalContactInMessage = /(http|www\.|[a-z0-9-]+\.(tw|com|net|org)|電話|客服|連結|網址|login|登入|驗證入口|02-\d{4}-\d{4}|\d{2,4}-\d{3,4}-\d{3,4})/i.test(msg);
 
   return {
     hasUrgency: /(立即|馬上|緊急|立刻|限時|今日|今天|逾期|停用|失效|18:00|24小時)/i.test(msg),
     hasSensitiveAction: /(匯款|轉帳|otp|驗證碼|密碼|登入|login|帳號確認|帳戶確認|身分驗證|提供證件|點擊連結)/i.test(msg),
     hasOfficialClaim: /(官方|政府|行政院|銀行|健保|法院|檢警|金融|法規)/i.test(msg),
     hasOfficialVerificationRoute: /(官方網站|官方App|官方客服|客服專線|臨櫃|分行|公文號|案號)/i.test(msg),
-    hasSubjectIdentity: /(台灣|銀行|公司|單位|客服中心|機關|署|局|商業銀行|中華郵政)/i.test(msg),
+    hasSubjectIdentity: /(台灣|銀行|公司|單位|客服中心|客服|機關|署|局|商業銀行|中華郵政|系統通知|維護通知)/i.test(msg),
     hasBoundarySignal: /(\d{1,2}:\d{2}|期限|金額|範圍|至|前完成|步驟|第\d步|僅限|僅於)/i.test(msg),
-    hasBasisSignal: /(依據|合約|條款|公文|規範|政策|案號|reference|official|法律)/i.test(msg),
+    hasBasisSignal: /(依據|合約|條款|公文|規範|政策|案號|reference|official|法律|維護|公告|通知設定)/i.test(msg),
     hasResponsibilitySignal: /(負責|賠償|申訴|責任窗口|承辦|機關|受理|承擔|追責)/i.test(msg),
     hasComplaintRoute: /(申訴|客服專線|官方客服|受理窗口|金管會|警政署|165)/i.test(msg),
     hasCostBearerSignal: /(本公司承擔|由本單位負責|若有損失|賠償機制|保證|責任歸屬)/i.test(msg),

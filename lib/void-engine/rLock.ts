@@ -12,6 +12,7 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, Number(n.toFixed(2))));
 
 export function applyRLock(message: string, input: ScbkrScore, features: ExtractedFeatures): RLockResult {
   const reasons: string[] = [];
+  const decisionPush = features.hasSensitiveAction || features.hasUrgency || /(立即|請於|請完成|請確認|請點擊|請登入|否則)/i.test(message);
 
   const unverifiedSender = !features.hasSubjectIdentity || (features.hasOfficialClaim && !features.hasOfficialVerificationRoute);
   const implicitResponsibilityOnly = !features.hasResponsibilitySignal;
@@ -19,7 +20,8 @@ export function applyRLock(message: string, input: ScbkrScore, features: Extract
   const noCostBearer = !features.hasCostBearerSignal;
   const polishedButUnaccountable = features.fakeOfficialStyle && !features.hasResponsibilitySignal;
 
-  const shouldTrigger = unverifiedSender || implicitResponsibilityOnly || noComplaintRoute || noCostBearer || polishedButUnaccountable;
+  const shouldTrigger =
+    decisionPush && (unverifiedSender || implicitResponsibilityOnly || noComplaintRoute || noCostBearer || polishedButUnaccountable);
 
   if (!shouldTrigger) {
     return { scores: input, triggered: false, floorRisk: null, reasonCodes: [] };

@@ -34,6 +34,15 @@ export function runFallbackAudit(message: string, reason = "fallback"): AuditRes
     R: hasResponsibilityChannel ? 0.62 : 0.2
   };
 
+  // Non-sensitive casual message: keep as UNCLEAR instead of over-escalating to fraud.
+  if (!hasSensitive && !hasUrgent) {
+    score.S = hasSender ? 0.7 : 0.58;
+    score.C = 0.64;
+    score.B = score.B > 0.55 ? Math.max(score.B, 0.68) : 0.62;
+    score.K = hasBasis ? Math.max(score.K, 0.66) : 0.6;
+    score.R = hasResponsibilityChannel ? Math.max(score.R, 0.7) : 0.6;
+  }
+
   if (hasUrgent && hasSensitive && !hasSender) {
     score.S = 0.2;
     score.C = 0.2;
