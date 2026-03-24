@@ -6,6 +6,7 @@ export interface ScbkrScore {
   S: number;
   C: number;
   B: number;
+  /** K = Basis & Cost Ground: verifiable basis + where real-world cost/risk lands. */
   K: number;
   R: number;
 }

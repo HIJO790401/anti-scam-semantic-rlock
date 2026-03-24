@@ -9,10 +9,18 @@ interface Props {
 
 function ScoreGrid({ result }: { result: AuditResponse }) {
   const entries = Object.entries(result.scbkr);
+  const labelMap: Record<string, string> = {
+    S: "主體 Subject",
+    C: "因果 Cause",
+    B: "邊界 Boundary",
+    K: "依據/成本 Basis&Cost",
+    R: "責任 Responsibility"
+  };
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
       {entries.map(([k, v]) => (
         <div key={k} className="rounded-lg bg-slate-100 p-3 text-center">
+          <p className="text-xs text-slate-500">{labelMap[k] ?? k}</p>
           <p className="text-xs text-slate-500">{k}</p>
           <p className="text-lg font-semibold">{(v * 100).toFixed(0)}</p>
         </div>

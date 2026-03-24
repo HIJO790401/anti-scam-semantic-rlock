@@ -72,7 +72,9 @@ export function runFallbackAudit(message: string, reason = "fallback"): AuditRes
       subject_analysis: hasSender ? "有提到單位名稱，但仍需自行查證是否真實。" : "發送者身分不清楚，無法確認誰負責。",
       cause_analysis: hasUrgent && hasSensitive ? "以急迫語氣要求敏感操作，因果鏈薄弱。" : "有基本原因描述，但細節仍不足。",
       boundary_analysis: score.B > 0.5 ? "有時間或範圍資訊，但規則並不完整。" : "缺少明確範圍、步驟或限制說明。",
-      basis_analysis: hasBasis ? "有提到政策或官方字眼，但缺少可獨立驗證證據。" : "沒有提供可自行驗證的正式依據。",
+      basis_analysis: hasBasis
+        ? "有提到政策或官方字眼，但仍缺少可獨立驗證來源與成本落點說明。"
+        : "沒有提供可自行驗證的正式依據，也沒說清楚照做後風險成本由誰承擔。",
       responsibility_analysis: hasResponsibilityChannel
         ? "有提供責任窗口跡象，但仍要使用既有官方管道確認。"
         : "未說明出事時誰負責、如何追責，責任不可驗。",

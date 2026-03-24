@@ -2,6 +2,13 @@
 
 A full-stack Next.js demo for governance-layer fraud auditing. The app evaluates whether a message is **structurally qualified** to enter a human decision chain, using SCBKR + Responsibility Lock (R-Lock).
 
+SCBKR in this demo:
+- S: Subject
+- C: Cause
+- B: Boundary
+- **K: Basis & Cost Ground** (可查證依據 + 成本落點)
+- R: Responsibility
+
 ## Project structure
 
 ```text

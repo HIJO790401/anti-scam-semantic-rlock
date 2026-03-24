@@ -11,8 +11,8 @@ C - Cause:
 Is the requested action backed by a logical and continuous causal chain?
 B - Boundary:
 Are conditions, timeframes, amounts, and scope clearly defined?
-K - Basis:
-Is there a verifiable basis such as contract, policy, official channel, authentication, or prior agreement?
+K - Basis & Cost Ground:
+Is there a verifiable official basis, and if the user follows the message, what real-world cost/risk (money, account, identity, data) would fall on the user?
 R - Responsibility:
 If something goes wrong, who is accountable and how?
 
@@ -32,7 +32,7 @@ and the final result must be at least HIGH RISK or SCAM.
 R-Lock prevents the model from being fooled by structurally polished fraudulent text.
 
 Responsibility means:
-verifiable identity + traceable basis + real accountability + real cost-bearing capacity.
+verifiable identity + traceable basis + clear cost ground + real accountability + real cost-bearing capacity.
 
 Decision principle:
 The goal is NOT merely to classify scams.
