@@ -42,20 +42,16 @@ export default function HomePage() {
 
   return (
     <main className={containerClass}>
-      <header className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="absolute inset-0 bg-[url('/rlock-bg-9x16.jpg')] bg-cover bg-center md:bg-[url('/rlock-bg-16x9.jpg')] md:bg-top" />
-        <div className="absolute inset-0 bg-gradient-to-br from-white/92 via-blue-50/84 to-white/88 md:from-white/90 md:via-blue-50/78 md:to-white/86" />
-        <div className="relative p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-trust-700">SCBKR + R-Lock Uncheatable Anti-Fraud System</p>
-          <h1 className={`mt-2 font-bold text-slate-900 ${mode === "elder" ? "text-4xl" : "text-3xl"}`}>SCBKR 智慧防詐小幫手</h1>
-          <p className={`mt-2 text-slate-700 ${mode === "elder" ? "text-2xl" : "text-lg"}`}>一句話，就看出這是不是能信的訊息。</p>
-          <p className="mt-1 text-sm text-slate-500">One message tells whether it is structurally trustworthy.</p>
-          <p className={`mt-4 whitespace-pre-line text-slate-700 ${mode === "elder" ? "text-xl" : "text-sm"}`}>
-            把你收到的簡訊、Line、Email 或任何可疑訊息貼上來。
-            系統會用五個維度審計：主體、因果、邊界、依據/成本基礎、責任。
-            結果分為：安全 / 模糊 / 高風險 / 疑似詐騙，並用白話告訴你：哪裡怪、為什麼怪、為什麼不能直接信。
-          </p>
-        </div>
+      <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-trust-700">SCBKR + R-Lock Uncheatable Anti-Fraud System</p>
+        <h1 className={`mt-2 font-bold text-slate-900 ${mode === "elder" ? "text-4xl" : "text-3xl"}`}>SCBKR 智慧防詐小幫手</h1>
+        <p className={`mt-2 text-slate-700 ${mode === "elder" ? "text-2xl" : "text-lg"}`}>一句話，就看出這是不是能信的訊息。</p>
+        <p className="mt-1 text-sm text-slate-500">One message tells whether it is structurally trustworthy.</p>
+        <p className={`mt-4 whitespace-pre-line text-slate-700 ${mode === "elder" ? "text-xl" : "text-sm"}`}>
+          把你收到的簡訊、Line、Email 或任何可疑訊息貼上來。
+          系統會用五個維度審計：主體、因果、邊界、依據、責任。
+          結果分為：安全 / 模糊 / 高風險 / 疑似詐騙，並用白話告訴你：哪裡怪、為什麼怪、為什麼不能直接信。
+        </p>
       </header>
 
       <ModeSwitch value={mode} onChange={setMode} />
@@ -112,7 +108,7 @@ export default function HomePage() {
             <li>Subject：{result.explain_mode.subject_analysis}</li>
             <li>Cause：{result.explain_mode.cause_analysis}</li>
             <li>Boundary：{result.explain_mode.boundary_analysis}</li>
-            <li>Basis & Cost Ground：{result.explain_mode.basis_analysis}</li>
+            <li>Basis：{result.explain_mode.basis_analysis}</li>
             <li>Responsibility：{result.explain_mode.responsibility_analysis}</li>
             <li>R-Lock：{result.explain_mode.r_lock_triggered ? "責任不可驗，已觸發升級" : "未觸發"}</li>
           </ul>
@@ -123,7 +119,7 @@ export default function HomePage() {
         <h2 className="text-lg font-semibold text-trust-700">這不是在問「像不像詐騙」</h2>
         <p className="mt-2 text-slate-700">本系統在問：「這段訊息是否具備可驗證的責任結構，足以進入你的決策？」</p>
         <ul className="mt-3 list-disc space-y-1 pl-6 text-slate-700">
-          <li>SCBKR：拆主語、因果、邊界、依據/成本基礎、責任</li>
+          <li>SCBKR：拆主語、因果、邊界、依據、責任</li>
           <li>R-Lock：責任不可驗，直接升級風險</li>
           <li>Explain mode：用白話告訴你為什麼不能信</li>
         </ul>
