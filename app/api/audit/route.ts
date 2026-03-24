@@ -3,6 +3,7 @@ import { auditRequestSchema, auditSchema } from "@/lib/schema";
 import { auditWithBedrock } from "@/lib/bedrock";
 import { runFallbackAudit } from "@/lib/fallback";
 import { AuditResponse } from "@/lib/types";
+import { runVoidEngine } from "@/lib/void-engine";
 
 function lowConfidence(result: AuditResponse): boolean {
   const sensitiveMismatch =
@@ -30,20 +31,15 @@ export async function POST(request: NextRequest) {
       result.meta.model = `mock:${provider}`;
     }
 
-    if (
-      result.scbkr.R < 0.4 && (result.risk_level === "SAFE" || result.risk_level === "UNCLEAR")
-    ) {
-      const fallback = runFallbackAudit(payload.message, "post-check-r-lock");
-      return NextResponse.json({ ...fallback, meta: { ...fallback.meta, latency_ms: Date.now() - started } });
-    }
-
+    let sourceForEngine = result;
     if (lowConfidence(result)) {
-      const fallback = runFallbackAudit(payload.message, "low-confidence-fallback");
-      return NextResponse.json({ ...fallback, meta: { ...fallback.meta, latency_ms: Date.now() - started } });
+      sourceForEngine = runFallbackAudit(payload.message, "low-confidence-fallback");
+      sourceForEngine.meta.model = `${result.meta.model}|fallback`;
     }
 
-    const validated = auditSchema.parse(result);
-    return NextResponse.json({ ...validated, meta: { ...result.meta, latency_ms: Date.now() - started } });
+    const parsedSource = auditSchema.parse(sourceForEngine);
+    const engineVerdict = runVoidEngine(payload.message, { ...parsedSource, meta: sourceForEngine.meta });
+    return NextResponse.json({ ...engineVerdict, meta: { ...sourceForEngine.meta, latency_ms: Date.now() - started } });
   } catch {
     const message = (() => {
       try {
@@ -54,6 +50,7 @@ export async function POST(request: NextRequest) {
     })();
 
     const fallback = runFallbackAudit(message, "error-fallback");
-    return NextResponse.json({ ...fallback, meta: { ...fallback.meta, latency_ms: Date.now() - started } }, { status: 200 });
+    const engineVerdict = runVoidEngine(message, fallback);
+    return NextResponse.json({ ...engineVerdict, meta: { ...fallback.meta, latency_ms: Date.now() - started } }, { status: 200 });
   }
 }

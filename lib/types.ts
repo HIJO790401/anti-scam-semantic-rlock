@@ -29,10 +29,37 @@ export interface AuditResponse {
   scbkr: ScbkrScore;
   fraud_score: number;
   risk_level: RiskLevel;
+  claim_validity?: "VALID" | "INVALID";
+  final_2_state?: "REAL_2" | "DRAFT_2" | "SAMPLE_2" | "VOID_2" | "VOID_CLAIM" | "VOID_GOVERNANCE" | "VOID_REVISION" | "VARIANT_DANGER";
+  revision_state?: "VALID_REVISION" | "VOID_REVISION" | null;
+  error_type?: string[];
+  error_layer?: string[];
+  void_reason_code?: string[];
+  action_gate?: "ALLOW" | "WARN" | "BLOCK" | "SIGN_AND_CONTINUE";
   reason_en: string;
   reason_zh: string;
   advice_zh: string;
   explain_mode: ExplainMode;
+  output_modes?: {
+    standard: {
+      title_zh: string;
+      summary_zh: string;
+      advice_zh: string;
+      summary_en: string | null;
+    };
+    professional: {
+      title_zh: string;
+      summary_zh: string;
+      api_note_zh: string;
+      raw_structured_view: Record<string, unknown>;
+    };
+    elder: {
+      title_zh: string;
+      message_zh: string;
+      must_not_do_zh: string[];
+      must_do_zh: string[];
+    };
+  };
   meta: AuditMeta;
 }
 

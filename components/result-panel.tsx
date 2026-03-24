@@ -21,7 +21,6 @@ function ScoreGrid({ result }: { result: AuditResponse }) {
       {entries.map(([k, v]) => (
         <div key={k} className="rounded-lg bg-slate-100 p-3 text-center">
           <p className="text-xs text-slate-500">{labelMap[k] ?? k}</p>
-          <p className="text-xs text-slate-500">{k}</p>
           <p className="text-lg font-semibold">{(v * 100).toFixed(0)}</p>
         </div>
       ))}
