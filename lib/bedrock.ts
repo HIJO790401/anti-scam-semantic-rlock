@@ -6,12 +6,12 @@ import crypto from "crypto";
 /**
  * Lightweight Bedrock wrapper.
  *
- * For hackathon portability (and to avoid hard-coding credential logic in demo code),
- * this wrapper supports two deployment patterns:
- * 1) Direct Bedrock-compatible gateway URL via BEDROCK_INVOKE_URL
- * 2) Local/edge proxy that signs AWS requests on behalf of this app
+ * Amplify-friendly Bedrock wrapper:
+ * 1) Default: direct Bedrock Runtime via SigV4 (`BEDROCK_USE_SDK=true`)
+ *    - Uses runtime IAM role credentials exposed by AWS execution environment.
+ * 2) Optional: gateway/proxy mode via BEDROCK_INVOKE_URL
  */
-const DEFAULT_MODEL = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+const DEFAULT_MODEL = "anthropic.claude-3-haiku-20240307-v1:0";
 const DEFAULT_REGION = "us-west-2";
 
 function hmac(key: crypto.BinaryLike, data: string): Buffer {
@@ -71,7 +71,8 @@ async function invokeBedrockBySigV4(modelId: string, body: string): Promise<unkn
     body
   });
   if (!resp.ok) {
-    throw new Error(`Bedrock SigV4 invoke failed: ${resp.status}`);
+    const errBody = await resp.text();
+    throw new Error(`Bedrock SigV4 invoke failed: status=${resp.status} body=${errBody.slice(0, 1200)}`);
   }
   return resp.json();
 }
@@ -87,7 +88,7 @@ export async function auditWithBedrock(message: string): Promise<AuditResponse> 
   const invokeUrl = process.env.BEDROCK_INVOKE_URL;
   const modelId = process.env.BEDROCK_MODEL_ID || DEFAULT_MODEL;
   const apiKey = process.env.BEDROCK_API_KEY;
-  const useSdkMode = process.env.BEDROCK_USE_SDK === "true";
+  const useSdkMode = process.env.BEDROCK_USE_SDK !== "false";
   if (!useSdkMode && !invokeUrl) throw new Error("Missing BEDROCK_INVOKE_URL");
 
   const requestBody = {
@@ -116,7 +117,8 @@ export async function auditWithBedrock(message: string): Promise<AuditResponse> 
           body: JSON.stringify(requestBody)
         });
         if (!resp.ok) {
-          throw new Error(`Bedrock invoke failed: ${resp.status}`);
+          const errBody = await resp.text();
+          throw new Error(`Bedrock invoke failed: status=${resp.status} body=${errBody.slice(0, 1200)}`);
         }
         return resp.json();
       })()) as { content?: { text?: string }[]; output_text?: string };

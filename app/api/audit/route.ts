@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const payload = auditRequestSchema.parse(json);
 
     const provider = process.env.LLM_PROVIDER || "bedrock";
-    const strictMode = process.env.DECISION_ENGINE_MODE === "strict";
+    const strictMode = true;
     let result: AuditResponse;
 
     if (provider === "bedrock") {
@@ -61,7 +61,25 @@ export async function POST(request: NextRequest) {
       hash_explain: RESPONSIBILITY_HASH_EXPLAIN,
       meta: { ...sourceForEngine.meta, latency_ms: Date.now() - started }
     });
-  } catch {
+  } catch (error) {
+    const err = error as Error;
+    const cause = err && "cause" in err ? (err as Error & { cause?: unknown }).cause : undefined;
+    const causeObj = cause as { name?: string; message?: string; code?: string } | undefined;
+    const modelId = process.env.BEDROCK_MODEL_ID || "anthropic.claude-3-5-sonnet-20240620-v1:0";
+    const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "unknown";
+    console.error("[/api/audit] Bedrock/Audit failure", {
+      error_name: err?.name ?? "UnknownError",
+      error_message: err?.message ?? "unknown",
+      error_stack: err?.stack ?? "no-stack",
+      error_cause_name: causeObj?.name ?? "none",
+      error_cause_message: causeObj?.message ?? "none",
+      error_cause_code: causeObj?.code ?? "none",
+      aws_region: region,
+      model_id: modelId,
+      has_aws_access_key_id: Boolean(process.env.AWS_ACCESS_KEY_ID),
+      has_aws_session_token: Boolean(process.env.AWS_SESSION_TOKEN)
+    });
+
     const message = (() => {
       try {
         return JSON.parse(rawBody).message ?? "";
