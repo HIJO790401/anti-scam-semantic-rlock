@@ -4,6 +4,7 @@ import { auditWithBedrock } from "@/lib/bedrock";
 import { runFallbackAudit } from "@/lib/fallback";
 import { AuditResponse } from "@/lib/types";
 import { runVoidEngine } from "@/lib/void-engine";
+import { buildResponsibilityHashBasis, computeResponsibilityHash, RESPONSIBILITY_HASH_EXPLAIN } from "@/lib/responsibility-hash";
 
 function lowConfidence(result: AuditResponse): boolean {
   const sensitiveMismatch =
@@ -39,7 +40,14 @@ export async function POST(request: NextRequest) {
 
     const parsedSource = auditSchema.parse(sourceForEngine);
     const engineVerdict = runVoidEngine(payload.message, { ...parsedSource, meta: sourceForEngine.meta });
-    return NextResponse.json({ ...engineVerdict, meta: { ...sourceForEngine.meta, latency_ms: Date.now() - started } });
+    const hashBasis = buildResponsibilityHashBasis(engineVerdict);
+    return NextResponse.json({
+      ...engineVerdict,
+      responsibility_hash: computeResponsibilityHash(hashBasis),
+      hash_basis: hashBasis,
+      hash_explain: RESPONSIBILITY_HASH_EXPLAIN,
+      meta: { ...sourceForEngine.meta, latency_ms: Date.now() - started }
+    });
   } catch {
     const message = (() => {
       try {
@@ -51,6 +59,16 @@ export async function POST(request: NextRequest) {
 
     const fallback = runFallbackAudit(message, "error-fallback");
     const engineVerdict = runVoidEngine(message, fallback);
-    return NextResponse.json({ ...engineVerdict, meta: { ...fallback.meta, latency_ms: Date.now() - started } }, { status: 200 });
+    const hashBasis = buildResponsibilityHashBasis(engineVerdict);
+    return NextResponse.json(
+      {
+        ...engineVerdict,
+        responsibility_hash: computeResponsibilityHash(hashBasis),
+        hash_basis: hashBasis,
+        hash_explain: RESPONSIBILITY_HASH_EXPLAIN,
+        meta: { ...fallback.meta, latency_ms: Date.now() - started }
+      },
+      { status: 200 }
+    );
   }
 }
