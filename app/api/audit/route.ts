@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auditRequestSchema, auditSchema } from "@/lib/schema";
 import {
   auditWithBedrock,
-  resolveAwsCredentials,
+  buildBedrockRequestUrl,
   resolveAwsRegion,
   resolveBedrockModelId,
+  resolveCredentialSource,
   resolveStrictMode
 } from "@/lib/bedrock";
 import { runFallbackAudit } from "@/lib/fallback";
@@ -82,9 +83,7 @@ export async function POST(request: NextRequest) {
     const strictMode = resolveStrictMode();
     const useSdkMode = process.env.BEDROCK_USE_SDK !== "false";
     const invokeUrl = process.env.BEDROCK_INVOKE_URL || "N/A";
-    const signedPath = `/model/${modelId}/invoke`;
-    const requestUrl = useSdkMode ? `https://bedrock-runtime.${awsRegion}.amazonaws.com${signedPath}` : invokeUrl;
-    const { credentials, source } = await resolveAwsCredentials();
+    const requestUrl = useSdkMode ? buildBedrockRequestUrl(awsRegion, modelId) : invokeUrl;
 
     console.error("[/api/audit] Bedrock/Audit failure", {
       error_name: err?.name ?? "UnknownError",
@@ -94,14 +93,11 @@ export async function POST(request: NextRequest) {
       error_cause_message: causeObj?.message ?? "none",
       error_cause_code: causeObj?.code ?? "none",
       resolved_model_id: modelId,
-      signed_path: useSdkMode ? signedPath : "N/A(gateway mode)",
-      request_url: requestUrl,
       aws_region: awsRegion,
       use_sdk_mode: useSdkMode,
-      has_access_key: Boolean(credentials?.accessKeyId),
-      has_session_token: Boolean(credentials?.sessionToken),
-      credential_source: source,
-      strict_mode: strictMode
+      credential_source: resolveCredentialSource(useSdkMode),
+      strict_mode: strictMode,
+      request_url: requestUrl
     });
 
     const message = (() => {
