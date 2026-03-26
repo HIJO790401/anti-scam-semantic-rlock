@@ -34,6 +34,9 @@ SCBKR + R-Lock 不是一般的詐騙分類器，也不是聊天機器人。
 4. **VOID Engine 最終裁決**：輸出 `VOID_CLAIM / VOID_GOVERNANCE / VOID_REVISION` 等治理結果。  
 5. **Responsibility Hash（責任結構雜湊碼）**：  
    將本次治理裁決與責任欄位固化為可比對指紋，讓後續版本可做一致性比對與責任追蹤。
+6. **責任人硬規則（Hard Rule）**：  
+   若訊息缺少「具名負責人 + 可聯絡窗口」，一律不得 `ALLOW`；  
+   至少 `WARN`，若同時存在決策推動（催促/敏感操作）則直接 `BLOCK`。
 
 ### 你在 Demo 會看到什麼
 - 三種視圖：Standard / Professional / Elder  
@@ -45,7 +48,6 @@ SCBKR + R-Lock 不是一般的詐騙分類器，也不是聊天機器人。
 - 傳統：像不像詐騙（相似度/分類）  
 - 我們：能不能進入決策鏈（治理有效性/責任可驗性）
 
-### Demo 收尾台詞
 **No decision without verifiable responsibility structure.**  
 沒有可驗證責任結構，就不應進入人的決策鏈。
 
