@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditRequestSchema, auditSchema } from "@/lib/schema";
-import { auditWithBedrock, resolveBedrockModelId } from "@/lib/bedrock";
+import {
+  auditWithBedrock,
+  resolveAwsCredentials,
+  resolveAwsRegion,
+  resolveBedrockModelId,
+  resolveStrictMode
+} from "@/lib/bedrock";
 import { runFallbackAudit } from "@/lib/fallback";
 import { AuditResponse } from "@/lib/types";
 import { runVoidEngine } from "@/lib/void-engine";
@@ -22,7 +28,7 @@ export async function POST(request: NextRequest) {
     const payload = auditRequestSchema.parse(json);
 
     const provider = process.env.LLM_PROVIDER || "bedrock";
-    const strictMode = true;
+    const strictMode = resolveStrictMode();
     let result: AuditResponse;
 
     if (provider === "bedrock") {
@@ -72,7 +78,14 @@ export async function POST(request: NextRequest) {
         return "MISSING_BEDROCK_MODEL_ID";
       }
     })();
-    const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "unknown";
+    const awsRegion = resolveAwsRegion();
+    const strictMode = resolveStrictMode();
+    const useSdkMode = process.env.BEDROCK_USE_SDK !== "false";
+    const invokeUrl = process.env.BEDROCK_INVOKE_URL || "N/A";
+    const signedPath = `/model/${modelId}/invoke`;
+    const requestUrl = useSdkMode ? `https://bedrock-runtime.${awsRegion}.amazonaws.com${signedPath}` : invokeUrl;
+    const { credentials, source } = await resolveAwsCredentials();
+
     console.error("[/api/audit] Bedrock/Audit failure", {
       error_name: err?.name ?? "UnknownError",
       error_message: err?.message ?? "unknown",
@@ -80,10 +93,15 @@ export async function POST(request: NextRequest) {
       error_cause_name: causeObj?.name ?? "none",
       error_cause_message: causeObj?.message ?? "none",
       error_cause_code: causeObj?.code ?? "none",
-      aws_region: region,
-      model_id: modelId,
-      has_aws_access_key_id: Boolean(process.env.AWS_ACCESS_KEY_ID),
-      has_aws_session_token: Boolean(process.env.AWS_SESSION_TOKEN)
+      resolved_model_id: modelId,
+      signed_path: useSdkMode ? signedPath : "N/A(gateway mode)",
+      request_url: requestUrl,
+      aws_region: awsRegion,
+      use_sdk_mode: useSdkMode,
+      has_access_key: Boolean(credentials?.accessKeyId),
+      has_session_token: Boolean(credentials?.sessionToken),
+      credential_source: source,
+      strict_mode: strictMode
     });
 
     const message = (() => {
