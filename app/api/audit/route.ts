@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     const payload = auditRequestSchema.parse(json);
 
     const provider = process.env.LLM_PROVIDER || "bedrock";
+    const strictMode = process.env.DECISION_ENGINE_MODE === "strict";
     let result: AuditResponse;
 
     if (provider === "bedrock") {
@@ -33,7 +34,19 @@ export async function POST(request: NextRequest) {
     }
 
     let sourceForEngine = result;
-    if (lowConfidence(result)) {
+    if (provider === "bedrock" && strictMode) {
+      const deterministic = runFallbackAudit(payload.message, "deterministic-strict");
+      sourceForEngine = {
+        ...deterministic,
+        explain_mode: result.explain_mode,
+        meta: {
+          model: result.meta.model,
+          fallback_used: false
+        }
+      };
+    }
+
+    if (!strictMode && lowConfidence(result)) {
       sourceForEngine = runFallbackAudit(payload.message, "low-confidence-fallback");
       sourceForEngine.meta.model = `${result.meta.model}|fallback`;
     }
