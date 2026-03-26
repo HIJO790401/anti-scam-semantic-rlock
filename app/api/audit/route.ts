@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditRequestSchema, auditSchema } from "@/lib/schema";
-import { auditWithBedrock } from "@/lib/bedrock";
+import { auditWithBedrock, resolveBedrockModelId } from "@/lib/bedrock";
 import { runFallbackAudit } from "@/lib/fallback";
 import { AuditResponse } from "@/lib/types";
 import { runVoidEngine } from "@/lib/void-engine";
+import { buildResponsibilityHashBasis, computeResponsibilityHash, RESPONSIBILITY_HASH_EXPLAIN } from "@/lib/responsibility-hash";
 
 function lowConfidence(result: AuditResponse): boolean {
   const sensitiveMismatch =
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest) {
     const payload = auditRequestSchema.parse(json);
 
     const provider = process.env.LLM_PROVIDER || "bedrock";
+    const strictMode = true;
     let result: AuditResponse;
 
     if (provider === "bedrock") {
@@ -32,15 +34,58 @@ export async function POST(request: NextRequest) {
     }
 
     let sourceForEngine = result;
-    if (lowConfidence(result)) {
+    if (provider === "bedrock" && strictMode) {
+      const deterministic = runFallbackAudit(payload.message, "deterministic-strict");
+      sourceForEngine = {
+        ...deterministic,
+        explain_mode: result.explain_mode,
+        meta: {
+          model: result.meta.model,
+          fallback_used: false
+        }
+      };
+    }
+
+    if (!strictMode && lowConfidence(result)) {
       sourceForEngine = runFallbackAudit(payload.message, "low-confidence-fallback");
       sourceForEngine.meta.model = `${result.meta.model}|fallback`;
     }
 
     const parsedSource = auditSchema.parse(sourceForEngine);
     const engineVerdict = runVoidEngine(payload.message, { ...parsedSource, meta: sourceForEngine.meta });
-    return NextResponse.json({ ...engineVerdict, meta: { ...sourceForEngine.meta, latency_ms: Date.now() - started } });
-  } catch {
+    const hashBasis = buildResponsibilityHashBasis(engineVerdict);
+    return NextResponse.json({
+      ...engineVerdict,
+      responsibility_hash: computeResponsibilityHash(hashBasis),
+      hash_basis: hashBasis,
+      hash_explain: RESPONSIBILITY_HASH_EXPLAIN,
+      meta: { ...sourceForEngine.meta, latency_ms: Date.now() - started }
+    });
+  } catch (error) {
+    const err = error as Error;
+    const cause = err && "cause" in err ? (err as Error & { cause?: unknown }).cause : undefined;
+    const causeObj = cause as { name?: string; message?: string; code?: string } | undefined;
+    const modelId = (() => {
+      try {
+        return resolveBedrockModelId();
+      } catch {
+        return "MISSING_BEDROCK_MODEL_ID";
+      }
+    })();
+    const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "unknown";
+    console.error("[/api/audit] Bedrock/Audit failure", {
+      error_name: err?.name ?? "UnknownError",
+      error_message: err?.message ?? "unknown",
+      error_stack: err?.stack ?? "no-stack",
+      error_cause_name: causeObj?.name ?? "none",
+      error_cause_message: causeObj?.message ?? "none",
+      error_cause_code: causeObj?.code ?? "none",
+      aws_region: region,
+      model_id: modelId,
+      has_aws_access_key_id: Boolean(process.env.AWS_ACCESS_KEY_ID),
+      has_aws_session_token: Boolean(process.env.AWS_SESSION_TOKEN)
+    });
+
     const message = (() => {
       try {
         return JSON.parse(rawBody).message ?? "";
@@ -51,6 +96,16 @@ export async function POST(request: NextRequest) {
 
     const fallback = runFallbackAudit(message, "error-fallback");
     const engineVerdict = runVoidEngine(message, fallback);
-    return NextResponse.json({ ...engineVerdict, meta: { ...fallback.meta, latency_ms: Date.now() - started } }, { status: 200 });
+    const hashBasis = buildResponsibilityHashBasis(engineVerdict);
+    return NextResponse.json(
+      {
+        ...engineVerdict,
+        responsibility_hash: computeResponsibilityHash(hashBasis),
+        hash_basis: hashBasis,
+        hash_explain: RESPONSIBILITY_HASH_EXPLAIN,
+        meta: { ...fallback.meta, latency_ms: Date.now() - started }
+      },
+      { status: 200 }
+    );
   }
 }

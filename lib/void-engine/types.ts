@@ -1,4 +1,4 @@
-import { AuditResponse, ExplainMode, RiskLevel, ScbkrScore } from "@/lib/types";
+import { AuditResponse, ExplainMode, GateChecks, RiskLevel, ScbkrScore } from "@/lib/types";
 
 export type Final2State =
   | "REAL_2"
@@ -116,6 +116,7 @@ export interface VoidEngineVerdict {
   error_layer: ErrorLayer[];
   void_reason_code: string[];
   action_gate: ActionGate;
+  gate_checks: GateChecks;
   reason_en: string;
   reason_zh: string;
   advice_zh: string;
