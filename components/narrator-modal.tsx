@@ -11,9 +11,43 @@ interface Props {
   narratorEn: string;
 }
 
+function explainToEnglish(text: string): string {
+  const table: Array<[RegExp, string]> = [
+    [/有提到單位名稱.*查證是否真實/, "A named entity is mentioned, but identity authenticity still requires independent verification."],
+    [/發送者身分不清楚.*誰負責/, "Sender identity is unclear, so accountability cannot be confirmed."],
+    [/以急迫語氣要求敏感操作.*薄弱/, "Urgency plus sensitive-action pressure indicates a weak causal chain."],
+    [/有基本原因描述.*不足/, "A basic reason is present, but the rationale remains incomplete."],
+    [/有時間或範圍資訊.*不完整/, "Some boundary hints exist (time/scope), but execution boundaries are incomplete."],
+    [/缺少明確範圍.*限制說明/, "Clear scope, procedural steps, and constraints are missing."],
+    [/有提到政策或官方字眼.*成本落點說明/, "Policy/official terms are mentioned, but independent verification and cost-bearing clarity are still missing."],
+    [/沒有提供可自行驗證.*誰承擔/, "No independently verifiable basis is provided, and cost-bearing ownership is undefined."],
+    [/有提供責任窗口跡象.*官方管道確認/, "A responsibility channel is hinted, but official-channel verification is still required."],
+    [/未說明出事時誰負責.*責任不可驗/, "It does not define who is accountable or how to trace responsibility when incidents occur."],
+    [/含依據真偽與成本落點檢查/, "Includes basis-authenticity and cost-bearing verification checks."]
+  ];
+  for (const [pattern, translated] of table) {
+    if (pattern.test(text)) return translated;
+  }
+  return "Governance explanation generated from SCBKR fields; verify through official channels before acting.";
+}
+
 export function NarratorModal({ open, onClose, result, narratorZh, narratorEn }: Props) {
   const fullText = useMemo(() => {
     if (!result) return "";
+    const explainLines = [
+      `Subject（中文）: ${result.explain_mode.subject_analysis}`,
+      `Subject (EN): ${explainToEnglish(result.explain_mode.subject_analysis)}`,
+      `Cause（中文）: ${result.explain_mode.cause_analysis}`,
+      `Cause (EN): ${explainToEnglish(result.explain_mode.cause_analysis)}`,
+      `Boundary（中文）: ${result.explain_mode.boundary_analysis}`,
+      `Boundary (EN): ${explainToEnglish(result.explain_mode.boundary_analysis)}`,
+      `Basis & Cost Ground（中文）: ${result.explain_mode.basis_analysis}`,
+      `Basis & Cost Ground (EN): ${explainToEnglish(result.explain_mode.basis_analysis)}`,
+      `Responsibility（中文）: ${result.explain_mode.responsibility_analysis}`,
+      `Responsibility (EN): ${explainToEnglish(result.explain_mode.responsibility_analysis)}`,
+      `R-Lock（中文）: ${result.explain_mode.r_lock_triggered ? "責任不可驗，已觸發升級。" : "責任鎖未觸發。"}`,
+      `R-Lock (EN): ${result.explain_mode.r_lock_triggered ? "Responsibility is not verifiable; R-Lock escalation is triggered." : "R-Lock is not triggered."}`
+    ];
     return [
       "【描述模型聲明】",
       "我是語言描述模型，只負責把系統裁決翻成白話；決策與責任定義由 SCBKR + R-Lock + VOID Engine 承擔。",
@@ -27,6 +61,9 @@ export function NarratorModal({ open, onClose, result, narratorZh, narratorEn }:
       "",
       "【Case Narrative (English)】",
       narratorEn,
+      "",
+      "【SCBKR Explain（中英對照）】",
+      ...explainLines,
       "",
       "【本次治理裁決】",
       `risk_level: ${result.risk_level}`,

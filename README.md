@@ -470,7 +470,7 @@ CLI output now includes:
 UI Explain flow:
 - Click `查看完整結構（語言描述彈窗）`
 - Modal pops up and shows narrator-style typing text
-- Includes role disclaimer, case-specific narration, governance verdict, and responsibility-hash guarantee
+- Includes role disclaimer, case-specific narration, SCBKR explain lines in ZH/EN pairs, governance verdict, and responsibility-hash guarantee
 
 
 ---
