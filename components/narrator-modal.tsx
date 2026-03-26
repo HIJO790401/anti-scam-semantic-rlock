@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AuditResponse } from "@/lib/types";
+import { speakText, stopSpeaking } from "@/lib/tts";
 
 interface Props {
   open: boolean;
@@ -99,9 +100,28 @@ export function NarratorModal({ open, onClose, result, narratorZh, narratorEn }:
       <div className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <h3 className="text-base font-semibold text-trust-700">Narrator Explain Modal（語言模型描述層）</h3>
-          <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50">
-            關閉
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => speakText(fullText, "zh-TW")}
+              className="rounded-lg border border-trust-300 bg-trust-50 px-3 py-1 text-sm text-trust-700 hover:bg-trust-100"
+            >
+              女聲朗讀
+            </button>
+            <button type="button" onClick={stopSpeaking} className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50">
+              停止語音
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                stopSpeaking();
+                onClose();
+              }}
+              className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              關閉
+            </button>
+          </div>
         </div>
         <div className="max-h-[72vh] overflow-auto px-5 py-4">
           <pre className="whitespace-pre-wrap font-mono text-sm leading-7 text-slate-800">{typedText}</pre>

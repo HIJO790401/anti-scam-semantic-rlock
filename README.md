@@ -471,6 +471,8 @@ UI Explain flow:
 - Click `查看完整結構（語言描述彈窗）`
 - Modal pops up and shows narrator-style typing text
 - Includes role disclaimer, case-specific narration, SCBKR explain lines in ZH/EN pairs, governance verdict, and responsibility-hash guarantee
+- Built-in local speech mode (female-voice priority, browser SpeechSynthesis, no cloud TTS required)
+- Elder mode also includes one-click voice playback for non-text users
 
 
 ---
