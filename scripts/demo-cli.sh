@@ -61,6 +61,21 @@ response=$(curl -sS -X POST "$URL/api/audit" -H 'content-type: application/json'
 echo "\n=== DEMO INPUT ==="
 echo "$MESSAGE"
 
+case "$CASE" in
+  bank_alert)
+    NARRATOR_ZH="這則訊息以銀行名義催促限時驗證，屬於高壓敏感操作。重點不是語氣像官方，而是責任結構能否被驗證。"
+    NARRATOR_EN="This message uses urgent bank-style verification pressure. The issue is accountability-structure verifiability, not official tone." ;;
+  gov_notice)
+    NARRATOR_ZH="這類公告可能不是詐騙，但若缺少可追責路徑與正式依據，仍不具決策資格。"
+    NARRATOR_EN="This notice may not be scam by default, but without accountable routes and verifiable basis it is not decision-eligible." ;;
+  normal_notice)
+    NARRATOR_ZH="這類訊息偏中性，通常風險較低；仍建議用既有官方管道二次查證。"
+    NARRATOR_EN="This type is neutral and usually lower risk, but secondary verification through known official channels is still recommended." ;;
+  *)
+    NARRATOR_ZH="我是描述模型，只負責翻譯系統判定。最終決策由治理引擎承擔。"
+    NARRATOR_EN="I am a narration layer; final decision authority belongs to the governance engine." ;;
+esac
+
 echo "\n=== DEMO SUMMARY ==="
 python3 - <<'PY' "$response"
 import json, sys
@@ -81,6 +96,13 @@ for key in ['subject_analysis','cause_analysis','boundary_analysis','basis_analy
     print(f"- {key}: {exp.get(key)}")
 print(f"- r_lock_triggered: {exp.get('r_lock_triggered')}")
 PY
+
+echo "\n=== NARRATOR LAYER ==="
+echo "ZH: $NARRATOR_ZH"
+echo "EN: $NARRATOR_EN"
+echo "聲明：我是語言描述模型；決策與責任定義由 SCBKR + R-Lock + VOID Engine 承擔。"
+echo "責任公式雜湊說明：若網址/話術變更但責任結構公式無法對齊，判定即不成立。"
+echo "如需責任公式保證與回放追責，請洽專案負責人：沉靜流派工作室 許文耀先生。"
 
 echo "\n=== RAW JSON ==="
 python3 -m json.tool <<< "$response"

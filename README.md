@@ -462,6 +462,11 @@ You can also target deployed Amplify URL:
 
 DEMO_URL=https://<your-amplify-domain> npm run demo:cli -- --case gov_notice
 
+CLI output now includes:
+- Governance verdict summary
+- Narrator-layer statement (ZH/EN)
+- Responsibility-formula hash guarantee note + accountable contact
+
 
 ---
 
