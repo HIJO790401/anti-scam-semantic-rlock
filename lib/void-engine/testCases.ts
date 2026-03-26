@@ -14,6 +14,11 @@ export const voidEngineTestCases = [
   {
     name: "revision_claim_missing_fields",
     message: "我們會修正並優化流程，請大家放心。"
+  },
+  {
+    name: "causal_only_boundary_blur_no_accountability",
+    message:
+      "這段訊息只有說因果，但邊界模糊，成本與依據不平衡，最後沒有誰承擔，直接VOID。1+1=2不是對不對，而是這句話在哪個場景對，對到哪裡失效。"
   }
 ];
 
