@@ -414,6 +414,17 @@ If you want to run without Bedrock credentials:
 
 LLM_PROVIDER=mock npm run dev
 
+5. CLI demo (for judges)
+
+Run web app locally first, then use CLI:
+
+npm run dev
+npm run demo:cli -- --case bank_alert
+
+You can also target deployed Amplify URL:
+
+DEMO_URL=https://<your-amplify-domain> npm run demo:cli -- --case gov_notice
+
 
 ---
 
