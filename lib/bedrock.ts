@@ -30,10 +30,8 @@ function resolveStrictMode(): boolean {
   return mode !== "relaxed";
 }
 
-export function resolveBedrockModelId(): string {
-  const modelId = process.env.BEDROCK_MODEL_ID?.trim();
-  if (!modelId) throw new Error("Missing BEDROCK_MODEL_ID");
-  return modelId;
+function logInvokeDebug(context: RuntimeDebugContext) {
+  console.info("[bedrock] invoke debug", context);
 }
 
 function resolveCredentialSource(useSdkMode: boolean): CredentialSource {
