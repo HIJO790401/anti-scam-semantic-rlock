@@ -1,4 +1,4 @@
-import { AuditResponse, RiskLevel, ScbkrScore } from "@/lib/types";
+import { RiskLevel, ScbkrScore } from "@/lib/types";
 import { buildOutputModes } from "@/lib/void-engine/outputModes";
 import { applyRLock } from "@/lib/void-engine/rLock";
 import { extractFeatures, normalizeScbkr, SCBKR_THRESHOLDS, weightedStructuralScore } from "@/lib/void-engine/scbkrScoring";
@@ -29,6 +29,10 @@ function determineBaseState(score: ScbkrScore): Final2State {
   return "VOID_2";
 }
 
+function logicZeroScore(): ScbkrScore {
+  return { S: 0, C: 0, B: 0, K: 0, R: 0 };
+}
+
 export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
   const features = extractFeatures(input.message);
   const normalized = normalizeScbkr(input.source.scbkr);
@@ -40,6 +44,14 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
   const governance = detectVoidGovernance(input.message, features);
   const revisionGate = evaluateRevisionGate(input.message);
   const errorTyping = classifyErrorTyping(input.message);
+  const hasWho = features.hasSubjectIdentity;
+  const hasWhy = adjustedScores.C >= 0.5 || /(因為|因此|所以|為了|原因|why)/i.test(input.message);
+  const hasTrue =
+    features.hasBasisSignal &&
+    (features.hasOfficialVerificationRoute || features.hasComplaintRoute) &&
+    (features.hasResponsibilitySignal || features.hasCostBearerSignal);
+  const probabilisticEscape = /(可能|也許|或許|大概|疑似|機率|probability|probably|maybe)/i.test(input.message);
+  const whoWhyTrueGateFail = !hasWho || !hasWhy || !hasTrue;
   const decisionPush =
     features.hasSensitiveAction || features.hasUrgency || /(請完成|請確認|請點擊|請登入|否則|身份驗證|重新驗證|帳號驗證)/i.test(input.message);
 
@@ -59,6 +71,8 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
   let actionGate: VoidEngineVerdict["action_gate"] = risk === "SAFE" ? "ALLOW" : risk === "UNCLEAR" ? "WARN" : "BLOCK";
 
   const voidReasonCode = [...rLock.reasonCodes, ...claim.codes, ...governance.codes, ...revisionGate.codes];
+  if (whoWhyTrueGateFail) voidReasonCode.push("whoWhyTrueGateFail");
+  if (probabilisticEscape) voidReasonCode.push("probabilisticEscape");
 
   const hardClaimCodes = new Set([
     "fakeVerification",
@@ -85,6 +99,11 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
     finalState = governance.isVoidGovernance ? "VOID_GOVERNANCE" : "VOID_REVISION";
     actionGate = "BLOCK";
   }
+  if (whoWhyTrueGateFail || probabilisticEscape) {
+    finalState = "VOID_GOVERNANCE";
+    actionGate = "BLOCK";
+    risk = maxRisk(risk, "RISK");
+  }
 
   if (risk === "SCAM" && finalState !== "VOID_GOVERNANCE" && finalState !== "VOID_REVISION" && finalState !== "VOID_CLAIM") {
     finalState = "VARIANT_DANGER";
@@ -95,7 +114,11 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
     actionGate = "WARN";
   }
 
-  const fraudScore = Math.max(input.source.fraud_score, Number((1 - weighted + (risk === "SCAM" ? 0.15 : 0)).toFixed(2)));
+  const logicZeroed = whoWhyTrueGateFail || probabilisticEscape;
+  const outputScbkr = logicZeroed ? logicZeroScore() : adjustedScores;
+  const fraudScore = logicZeroed
+    ? 1
+    : Math.max(input.source.fraud_score, Number((1 - weighted + (risk === "SCAM" ? 0.15 : 0)).toFixed(2)));
 
   const reasonZh =
     finalState === "VOID_CLAIM"
@@ -104,7 +127,9 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
         ? "此訊息命中治理逃責語句，未提供可追責框架，治理層判定無效。"
         : finalState === "VOID_REVISION"
           ? "此訊息提出修正聲稱，但未完整揭露錯誤型別與責任欄位，修訂聲稱無效。"
-          : input.source.reason_zh;
+          : logicZeroed
+            ? "未滿足 WHO+WHY+TRUE 決策閘門，或使用「可能」等機率逃責語句，邏輯歸零，禁止模型給分決策。"
+            : input.source.reason_zh;
 
   const reasonEn =
     finalState === "VOID_CLAIM"
@@ -113,7 +138,9 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
         ? "Governance-level responsibility framework is missing; statement is void under policy checks."
         : finalState === "VOID_REVISION"
           ? "Revision claim is void due to missing required error-definition fields."
-          : input.source.reason_en;
+          : logicZeroed
+            ? "WHO+WHY+TRUE gate failed or probabilistic escape wording detected; logic is zeroed and model scoring is not decision-eligible."
+            : input.source.reason_en;
 
   const adviceZh =
     actionGate === "BLOCK"
@@ -121,7 +148,7 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
       : input.source.advice_zh;
 
   const core: Omit<VoidEngineVerdict, "output_modes"> = {
-    scbkr: adjustedScores,
+    scbkr: outputScbkr,
     risk_level: risk,
     fraud_score: fraudScore,
     claim_validity: claim.state,
