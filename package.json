@@ -6,10 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "demo:cli": "bash scripts/demo-cli.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.940.0",
     "next": "15.1.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",
