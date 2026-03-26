@@ -60,6 +60,11 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
   };
   const decisionPush =
     features.hasSensitiveAction || features.hasUrgency || /(請完成|請確認|請點擊|請登入|否則|身份驗證|重新驗證|帳號驗證)/i.test(input.message);
+  const hasNamedResponsiblePerson = /(負責人[:：]?\s*[\u4e00-\u9fa5]{2,4}(先生|小姐|女士)?|聯絡人[:：]?\s*[\u4e00-\u9fa5]{2,4})/.test(input.message);
+  const hasContactWindow = /(\b09\d{8}\b|0\d{1,2}-\d{3,4}-\d{3,4}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|LINE|line|客服|窗口|聯絡方式)/i.test(
+    input.message
+  );
+  const hasNamedResponsibleOwner = hasNamedResponsiblePerson && hasContactWindow;
 
   const weakStructure = adjustedScores.S < 0.7 || adjustedScores.B < 0.7 || adjustedScores.R < 0.7;
   let risk = computeRiskFloor(adjustedScores, features.hasSensitiveAction, weakStructure, decisionPush);
@@ -114,6 +119,17 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
   if (risk === "SCAM" && finalState !== "VOID_GOVERNANCE" && finalState !== "VOID_REVISION" && finalState !== "VOID_CLAIM") {
     finalState = "VARIANT_DANGER";
     actionGate = "BLOCK";
+  }
+
+  if (!hasNamedResponsibleOwner) {
+    voidReasonCode.push("noNamedResponsibleOwner");
+    risk = maxRisk(risk, "UNCLEAR");
+    if (actionGate === "ALLOW") actionGate = "WARN";
+    if (decisionPush) {
+      actionGate = "BLOCK";
+      finalState = finalState === "VOID_CLAIM" || finalState === "VOID_REVISION" ? finalState : "VOID_GOVERNANCE";
+      risk = maxRisk(risk, "RISK");
+    }
   }
 
   if (finalState === "VOID_2" && risk !== "SCAM") {
