@@ -20,6 +20,31 @@ export interface ExplainMode {
   r_lock_triggered: boolean;
 }
 
+export interface GateChecks {
+  who_pass: boolean;
+  why_pass: boolean;
+  true_pass: boolean;
+  probabilistic_escape: boolean;
+}
+
+export interface ResponsibilityHashBasis {
+  version: string;
+  final_state: string;
+  action_gate: string;
+  risk_level: RiskLevel;
+  scbkr: ScbkrScore;
+  reason_codes: string[];
+  claim_validity: "VALID" | "INVALID";
+  governance_validity: "VALID" | "INVALID";
+  revision_state: "VALID_REVISION" | "VOID_REVISION" | null;
+  gate_checks: GateChecks;
+  responsibility_summary: {
+    subject: string;
+    basis_cost: string;
+    responsibility: string;
+  };
+}
+
 export interface AuditMeta {
   model: string;
   fallback_used: boolean;
@@ -36,6 +61,10 @@ export interface AuditResponse {
   error_layer?: string[];
   void_reason_code?: string[];
   action_gate?: "ALLOW" | "WARN" | "BLOCK" | "SIGN_AND_CONTINUE";
+  gate_checks?: GateChecks;
+  responsibility_hash?: string;
+  hash_basis?: ResponsibilityHashBasis;
+  hash_explain?: string;
   reason_en: string;
   reason_zh: string;
   advice_zh: string;

@@ -48,12 +48,13 @@ export default function HomePage() {
         <div className="relative p-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-trust-700">SCBKR + R-Lock Uncheatable Anti-Fraud System</p>
           <h1 className={`mt-2 font-bold text-slate-900 ${mode === "elder" ? "text-4xl" : "text-3xl"}`}>SCBKR 智慧防詐小幫手</h1>
-          <p className={`mt-2 text-slate-700 ${mode === "elder" ? "text-2xl" : "text-lg"}`}>一句話，就看出這是不是能信的訊息。</p>
+          <p className={`mt-2 text-slate-700 ${mode === "elder" ? "text-2xl" : "text-lg"}`}>一句話，先看它有沒有決策資格，再看風險。</p>
           <p className="mt-1 text-sm text-slate-500">One message tells whether it is structurally trustworthy.</p>
           <p className={`mt-4 whitespace-pre-line text-slate-700 ${mode === "elder" ? "text-xl" : "text-sm"}`}>
             把你收到的簡訊、Line、Email 或任何可疑訊息貼上來。
-            系統會用五個維度審計：主體、因果、邊界、依據/成本基礎、責任。
-            結果分為：安全 / 模糊 / 高風險 / 疑似詐騙，並用白話告訴你：哪裡怪、為什麼怪、為什麼不能直接信。
+            系統會先跑 SCBKR 五維審計（主體、因果、邊界、依據/成本、責任）與 WHO+WHY+TRUE 決策閘門，
+            再給出治理裁決與責任結構指紋。
+            如果只有說法沒有責任承接，就不具決策資格。
           </p>
           <div className="mt-4 rounded-xl border border-trust-200 bg-white/88 p-4 shadow-sm backdrop-blur-[1px]">
             <div className="flex gap-3">
@@ -61,12 +62,12 @@ export default function HomePage() {
               <div>
                 <p className={`font-semibold text-slate-900 ${mode === "elder" ? "text-2xl leading-snug" : "text-base leading-relaxed"}`}>
                   這不是在判斷它像不像詐騙。<br />
-                  這是在判斷：這段訊息，有沒有資格進入你的決策鏈。
+                  這是在判斷：這段訊息，有沒有責任結構資格進入你的決策鏈。
                 </p>
                 <p className="mt-2 text-xs leading-relaxed text-slate-600">
                   This system does not ask only whether a message looks fraudulent.
                   <br />
-                  It asks whether the message deserves to enter a human decision chain.
+                  It asks whether the message has accountable structure and can pass decision gating.
                 </p>
               </div>
             </div>
@@ -137,7 +138,7 @@ export default function HomePage() {
 
       <section className="rounded-2xl border border-trust-100 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-trust-700">這不是在問「像不像詐騙」</h2>
-        <p className="mt-2 text-slate-700">本系統在問：「這段訊息是否具備可驗證的責任結構，足以進入你的決策？」</p>
+        <p className="mt-2 text-slate-700">本系統在問：「它是否通過 WHO+WHY+TRUE，並具備可驗證責任結構，足以進入你的決策？」</p>
         <p className="mt-2 text-sm text-slate-700">
           不是只看它像不像詐騙，而是看它是否具備可驗證的責任結構，足以進入決策鏈。
         </p>
@@ -146,8 +147,10 @@ export default function HomePage() {
         </p>
         <ul className="mt-3 list-disc space-y-1 pl-6 text-slate-700">
           <li>SCBKR：拆主語、因果、邊界、依據/成本基礎、責任</li>
+          <li>WHO+WHY+TRUE Gate：缺一不可；若缺失或機率逃責語句，直接 VOID</li>
           <li>R-Lock：責任不可驗，直接升級風險</li>
-          <li>Explain mode：用白話告訴你為什麼不能信</li>
+          <li>Responsibility Hash：把本次責任結構裁決固化成可比對指紋</li>
+          <li>Explain mode：用白話告訴你哪裡缺、為什麼不能直接信</li>
         </ul>
       </section>
 
