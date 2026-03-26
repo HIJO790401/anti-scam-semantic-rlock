@@ -1,4 +1,4 @@
-import { AuditResponse, RiskLevel, ScbkrScore } from "@/lib/types";
+import { RiskLevel, ScbkrScore } from "@/lib/types";
 import { buildOutputModes } from "@/lib/void-engine/outputModes";
 import { applyRLock } from "@/lib/void-engine/rLock";
 import { extractFeatures, normalizeScbkr, SCBKR_THRESHOLDS, weightedStructuralScore } from "@/lib/void-engine/scbkrScoring";
