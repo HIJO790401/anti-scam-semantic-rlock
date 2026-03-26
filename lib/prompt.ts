@@ -41,6 +41,14 @@ The goal is to decide whether the message is structurally qualified to enter a u
 If the structure is weak, incomplete, or responsibility is unverifiable,
 the message must not be treated as decision-worthy.
 
+WHO + WHY + TRUE GATE (NON-BYPASSABLE)
+- WHO: a verifiable responsible subject must exist.
+- WHY: a concrete causal reason must exist.
+- TRUE: verifiable basis + verification route + accountability/cost-bearing path must exist.
+- If any one of WHO/WHY/TRUE is missing, the message is decision-ineligible and should be treated as VOID-level governance failure.
+- If wording uses probabilistic escape (e.g., "可能", "也許", "probably", "maybe") to avoid commitment, treat it as governance-void and not decision-eligible.
+- In these cases, do not normalize or soften with "maybe safe". Explain explicitly why logic is zeroed under governance.
+
 Risk rules:
 - If R < 0.40 → minimum RISK
 - If S < 0.40 or B < 0.40 → minimum RISK

@@ -9,6 +9,11 @@ export function detectVoidGovernance(message: string, f: ExtractedFeatures): Gov
   const responsibilityEscape = /(我們只是機率式系統|僅供參考不負責|模型可能出錯不承擔|仍需要更多研究驗證)/i.test(message);
   const comparisonVoid = /(比其他系統更安全|比別家好|業界最佳)/i.test(message) && !/(測試範圍|評估方法|責任範圍)/i.test(message);
   const frameworkScopeViolation = /(法規會處理|制度會保護你|交給政府)/i.test(message) && !/(哪個法規|哪個機關|受理窗口|責任歸屬)/i.test(message);
+  const causalOnlyStructureVoid =
+    /(只有說|只說).*(因果|cause)/i.test(message) &&
+    /(邊界模糊|邊界不清|boundary.*模糊)/i.test(message) &&
+    /((成本|代價).*(依據|基礎)|(依據|基礎).*(成本|代價)).*(不平衡|失衡)/i.test(message) &&
+    /(沒有誰承擔|無人承擔|沒有.*負責|直接VOID|void)/i.test(message);
 
   if (fakeProReferral) codes.push("fakeProReferral");
   if (delayEscape) codes.push("delayEscape");
@@ -16,6 +21,7 @@ export function detectVoidGovernance(message: string, f: ExtractedFeatures): Gov
   if (responsibilityEscape) codes.push("responsibilityEscape");
   if (comparisonVoid) codes.push("comparisonVoid");
   if (frameworkScopeViolation) codes.push("frameworkScopeViolation");
+  if (causalOnlyStructureVoid) codes.push("causalOnlyStructureVoid");
 
   return {
     isVoidGovernance: codes.length > 0,
