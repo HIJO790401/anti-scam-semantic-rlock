@@ -475,7 +475,7 @@ It audits whether the message deserves to enter a human decision chain.
 This repo is deployment-ready for AWS Amplify Hosting (Next.js SSR + API routes).
 
 Runtime behavior:
-- `DECISION_ENGINE_MODE` is enforced as strict in API route.
+- `DECISION_ENGINE_MODE` defaults to `strict`; set `relaxed` only for controlled experiments.
 - LLM is used for extract/explain text.
 - Final decision fields are deterministic (SCBKR / risk / final state / action gate).
 - If Bedrock fails or lacks permission, API returns fallback verdict and service stays available.
@@ -486,8 +486,8 @@ Recommended Amplify environment variables:
 - `AWS_REGION=us-west-2`
 - `BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0`
 
-Do not manually inject long-term AWS keys.
-Use Amplify execution role / service role IAM permissions for Bedrock.
+Do not manually inject long-term AWS keys (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`).
+Use Amplify SSR compute role IAM permissions for Bedrock.
 
 Minimum IAM permissions for Bedrock:
 - `bedrock:InvokeModel`
@@ -495,6 +495,18 @@ Minimum IAM permissions for Bedrock:
 
 Suggested resource scope:
 - `arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-haiku-20240307-v1:0`
+
+
+Runtime debug log fields (non-secret):
+- `resolved_model_id`
+- `signed_path`
+- `request_url`
+- `aws_region`
+- `use_sdk_mode`
+- `has_access_key`
+- `has_session_token`
+- `credential_source`
+- `strict_mode`
 
 Post-deploy smoke test:
 1) Open `/` and confirm page renders.

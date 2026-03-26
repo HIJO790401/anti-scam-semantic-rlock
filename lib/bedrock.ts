@@ -27,6 +27,33 @@ interface AwsCredentials {
   sessionToken?: string;
 }
 
+interface RuntimeDebugContext {
+  resolved_model_id: string;
+  signed_path: string;
+  request_url: string;
+  aws_region: string;
+  use_sdk_mode: boolean;
+  has_access_key: boolean;
+  has_session_token: boolean;
+  credential_source: "container-role" | "env-static" | "none";
+  strict_mode: boolean;
+}
+
+function resolveAwsRegion(): string {
+  return process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || DEFAULT_REGION;
+}
+
+function resolveStrictMode(): boolean {
+  const mode = process.env.DECISION_ENGINE_MODE?.trim().toLowerCase() || "strict";
+  return mode !== "relaxed";
+}
+
+export function resolveBedrockModelId(): string {
+  const modelId = process.env.BEDROCK_MODEL_ID?.trim();
+  if (!modelId) throw new Error("Missing BEDROCK_MODEL_ID");
+  return modelId;
+}
+
 async function loadRoleCredentialsFromContainerEndpoint(): Promise<AwsCredentials | null> {
   const relative = process.env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI;
   const full = process.env.AWS_CONTAINER_CREDENTIALS_FULL_URI;
@@ -53,32 +80,40 @@ async function loadRoleCredentialsFromContainerEndpoint(): Promise<AwsCredential
   };
 }
 
-async function resolveAwsCredentials(): Promise<AwsCredentials | null> {
+async function resolveAwsCredentials(): Promise<{ credentials: AwsCredentials | null; source: RuntimeDebugContext["credential_source"] }> {
+  const roleCredentials = await loadRoleCredentialsFromContainerEndpoint();
+  if (roleCredentials) {
+    return { credentials: roleCredentials, source: "container-role" };
+  }
+
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
   const sessionToken = process.env.AWS_SESSION_TOKEN;
   if (accessKeyId && secretAccessKey) {
-    return { accessKeyId, secretAccessKey, sessionToken };
+    return {
+      credentials: { accessKeyId, secretAccessKey, sessionToken },
+      source: "env-static"
+    };
   }
-  return loadRoleCredentialsFromContainerEndpoint();
+
+  return { credentials: null, source: "none" };
 }
 
-export function resolveBedrockModelId(): string {
-  const modelId = process.env.BEDROCK_MODEL_ID?.trim();
-  if (!modelId) throw new Error("Missing BEDROCK_MODEL_ID");
-  return modelId;
+function logInvokeDebug(context: RuntimeDebugContext) {
+  console.info("[bedrock] invoke debug", context);
 }
 
 async function invokeBedrockBySigV4(modelId: string, body: string): Promise<unknown> {
-  const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || DEFAULT_REGION;
-  const credentials = await resolveAwsCredentials();
+  const region = resolveAwsRegion();
+  const strictMode = resolveStrictMode();
+  const { credentials, source } = await resolveAwsCredentials();
   if (!credentials) {
     throw new Error("Missing AWS credentials in runtime. Check Amplify compute role credential injection.");
   }
 
   const host = `bedrock-runtime.${region}.amazonaws.com`;
-  const uri = `/model/${modelId}/invoke`;
-  const endpoint = `https://${host}${uri}`;
+  const signedPath = `/model/${modelId}/invoke`;
+  const requestUrl = `https://${host}${signedPath}`;
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
@@ -88,7 +123,7 @@ async function invokeBedrockBySigV4(modelId: string, body: string): Promise<unkn
   const signedHeaders = credentials.sessionToken
     ? "content-type;host;x-amz-content-sha256;x-amz-date;x-amz-security-token"
     : "content-type;host;x-amz-content-sha256;x-amz-date";
-  const canonicalRequest = `POST\n${uri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+  const canonicalRequest = `POST\n${signedPath}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
   const credentialScope = `${dateStamp}/${region}/bedrock/aws4_request`;
   const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;
   const kDate = hmac(`AWS4${credentials.secretAccessKey}`, dateStamp);
@@ -98,7 +133,7 @@ async function invokeBedrockBySigV4(modelId: string, body: string): Promise<unkn
   const signature = crypto.createHmac("sha256", kSigning).update(stringToSign, "utf8").digest("hex");
   const authorization = `AWS4-HMAC-SHA256 Credential=${credentials.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-  const resp = await fetch(endpoint, {
+  const resp = await fetch(requestUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -109,15 +144,19 @@ async function invokeBedrockBySigV4(modelId: string, body: string): Promise<unkn
     },
     body
   });
-  console.info("[bedrock] invoke debug", {
+
+  logInvokeDebug({
     resolved_model_id: modelId,
-    signed_path: uri,
-    request_url: endpoint,
+    signed_path: signedPath,
+    request_url: requestUrl,
+    aws_region: region,
     use_sdk_mode: true,
     has_access_key: Boolean(credentials.accessKeyId),
     has_session_token: Boolean(credentials.sessionToken),
-    aws_region: region
+    credential_source: source,
+    strict_mode: strictMode
   });
+
   if (!resp.ok) {
     const errBody = await resp.text();
     throw new Error(`Bedrock SigV4 invoke failed: status=${resp.status} body=${errBody.slice(0, 1200)}`);
@@ -137,10 +176,12 @@ export async function auditWithBedrock(message: string): Promise<AuditResponse> 
   const modelId = resolveBedrockModelId();
   const apiKey = process.env.BEDROCK_API_KEY;
   const useSdkMode = process.env.BEDROCK_USE_SDK !== "false";
+  const region = resolveAwsRegion();
+  const strictMode = resolveStrictMode();
+
   if (!useSdkMode && !invokeUrl) throw new Error("Missing BEDROCK_INVOKE_URL");
 
   const requestBody = {
-    modelId,
     anthropic_version: "bedrock-2023-05-31",
     max_tokens: 1200,
     temperature: 0,
@@ -156,14 +197,16 @@ export async function auditWithBedrock(message: string): Promise<AuditResponse> 
   const payload = (useSdkMode
     ? await invokeBedrockBySigV4(modelId, JSON.stringify(requestBody))
     : await (async () => {
-        console.info("[bedrock] invoke debug", {
+        logInvokeDebug({
           resolved_model_id: modelId,
           signed_path: "N/A(gateway mode)",
-          request_url: invokeUrl,
+          request_url: invokeUrl!,
+          aws_region: region,
           use_sdk_mode: false,
           has_access_key: Boolean(process.env.AWS_ACCESS_KEY_ID),
           has_session_token: Boolean(process.env.AWS_SESSION_TOKEN),
-          aws_region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || DEFAULT_REGION
+          credential_source: "none",
+          strict_mode: strictMode
         });
         const resp = await fetch(invokeUrl!, {
           method: "POST",
@@ -171,7 +214,7 @@ export async function auditWithBedrock(message: string): Promise<AuditResponse> 
             "Content-Type": "application/json",
             ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
           },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify({ modelId, ...requestBody })
         });
         if (!resp.ok) {
           const errBody = await resp.text();
@@ -179,6 +222,7 @@ export async function auditWithBedrock(message: string): Promise<AuditResponse> 
         }
         return resp.json();
       })()) as { content?: { text?: string }[]; output_text?: string };
+
   const llmText = payload.content?.[0]?.text ?? payload.output_text ?? "";
   const parsed = safeJsonParse(llmText);
   const validated = auditSchema.parse(parsed);
@@ -191,3 +235,5 @@ export async function auditWithBedrock(message: string): Promise<AuditResponse> 
     }
   };
 }
+
+export { resolveAwsRegion, resolveStrictMode, resolveAwsCredentials };
