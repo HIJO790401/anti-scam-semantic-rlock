@@ -574,3 +574,19 @@ Post-deploy smoke test:
 3) Check response:
    - `meta.model` should be Bedrock model ID (not `mock:*`, not `error-fallback`) when IAM/network is correct.
    - `meta.fallback_used` should be `false` when Bedrock call succeeds.
+
+---
+
+## 18. Judge FAQ（避免現場誤解）
+
+### Q1：你們有沒有接 Bedrock？
+有，專案保留 Bedrock 相關環境變數與部署配置（`LLM_PROVIDER` / `BEDROCK_MODEL_ID` / `AWS_REGION` 等），可在 AWS Amplify 環境接入。  
+本 repo 的 CLI demo 先以「穩定可重現」為主，用 deterministic 路徑展示治理裁決，不影響後續導入模型描述層。
+
+### Q2：為什麼 demo 先用 CLI / fallback？
+黑客松現場重點是「可重現、可解釋、可追責」。  
+CLI demo 能在網路不穩或權限延遲時，仍完整展示：SCBKR、WHO+WHY+TRUE、VOID、Responsibility Hash、Narrator 說明層。
+
+### Q3：這樣是不是代表不能導入模型？
+不是。模型描述層可直接導入；治理決策層維持 deterministic。  
+也就是：**模型負責描述，系統負責決策與責任承擔**，兩層分離、可獨立演進。
