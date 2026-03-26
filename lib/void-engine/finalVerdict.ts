@@ -120,8 +120,9 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
     ? 1
     : Math.max(input.source.fraud_score, Number((1 - weighted + (risk === "SCAM" ? 0.15 : 0)).toFixed(2)));
 
-  const reasonZh =
-    finalState === "VOID_CLAIM"
+  const reasonZh = logicZeroed
+    ? "未滿足 WHO+WHY+TRUE 決策閘門，或使用「可能」等機率逃責語句，邏輯歸零，禁止模型給分決策。"
+    : finalState === "VOID_CLAIM"
       ? "此訊息缺少決策所需的核心結構（主體/邊界/依據成本/責任），治理層判定為無效 claim。"
       : finalState === "VOID_GOVERNANCE"
         ? "此訊息命中治理逃責語句，未提供可追責框架，治理層判定無效。"
@@ -131,8 +132,9 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
             ? "未滿足 WHO+WHY+TRUE 決策閘門，或使用「可能」等機率逃責語句，邏輯歸零，禁止模型給分決策。"
             : input.source.reason_zh;
 
-  const reasonEn =
-    finalState === "VOID_CLAIM"
+  const reasonEn = logicZeroed
+    ? "WHO+WHY+TRUE gate failed or probabilistic escape wording detected; logic is zeroed and model scoring is not decision-eligible."
+    : finalState === "VOID_CLAIM"
       ? "Claim is structurally invalid for decision-chain entry under deterministic governance checks."
       : finalState === "VOID_GOVERNANCE"
         ? "Governance-level responsibility framework is missing; statement is void under policy checks."
