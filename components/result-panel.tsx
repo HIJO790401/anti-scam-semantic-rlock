@@ -1,5 +1,6 @@
 import { AuditResponse, UserMode } from "@/lib/types";
 import { riskMeta, toElderOutput } from "@/lib/ui";
+import { speakText, stopSpeaking } from "@/lib/tts";
 
 interface Props {
   result: AuditResponse;
@@ -97,8 +98,29 @@ export function ResultPanel({ result, mode, message }: Props) {
 
   if (mode === "elder") {
     const elder = toElderOutput(result, message);
+    const elderSpeech = [
+      elder.stop_signal,
+      "為什麼不能信：",
+      ...elder.why_not_trust,
+      "現在不要做什麼：",
+      ...elder.do_not,
+      "應該怎麼安全查：",
+      elder.safe_action
+    ].join("\n");
     return (
       <section className="space-y-4 rounded-2xl border-2 border-slate-300 bg-white p-6 text-lg leading-relaxed shadow">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => speakText(elderSpeech, "zh-TW")}
+            className="rounded-lg border border-trust-300 bg-trust-50 px-4 py-2 text-base font-semibold text-trust-700 hover:bg-trust-100"
+          >
+            語音模式（女聲）
+          </button>
+          <button type="button" onClick={stopSpeaking} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-base text-slate-700 hover:bg-slate-50">
+            停止語音
+          </button>
+        </div>
         <div className={`rounded-xl border-l-8 px-4 py-4 ${theme.className}`}>
           <p className="text-sm font-semibold">風險判定</p>
           <p className="text-3xl font-bold">{theme.label}</p>

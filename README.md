@@ -14,6 +14,43 @@ SCBKR + R-Lock 不是一般的詐騙分類器，也不是聊天機器人。
 
 ---
 
+## 0. Hackathon 最終版自述（Gogolook 可直接貼）
+
+### 一句話定位
+**我們不是在判斷訊息「像不像詐騙」，而是在做「決策前責任結構審計」。**
+
+### 我們解的問題
+很多社交工程訊息看起來正式、流程完整、語氣可信，但真正危險點在於：  
+**責任不可驗、追責不可行、成本落點不清楚。**
+
+### 系統核心機制（評審版）
+1. **SCBKR 五維審計**：S/C/B/K/R 拆解訊息責任結構。  
+2. **WHO + WHY + TRUE Gate**：  
+   - WHO：是否有可驗主體  
+   - WHY：是否有可驗因果  
+   - TRUE：是否有正式可驗依據、追責路徑與成本承擔  
+   任一不成立即不得進入可執行決策。  
+3. **R-Lock 責任鎖定**：遇到催促 + 敏感操作 + 責任不可驗，直接升級風險。  
+4. **VOID Engine 最終裁決**：輸出 `VOID_CLAIM / VOID_GOVERNANCE / VOID_REVISION` 等治理結果。  
+5. **Responsibility Hash（責任結構雜湊碼）**：  
+   將本次治理裁決與責任欄位固化為可比對指紋，讓後續版本可做一致性比對與責任追蹤。
+
+### 你在 Demo 會看到什麼
+- 三種視圖：Standard / Professional / Elder  
+- Explain Mode：可直接展示 SCBKR 五維與 R-Lock 觸發  
+- Admin JSON：可展示 `gate_checks`、`void_reason_code`、`responsibility_hash`  
+- CLI Demo：可直接在終端機演示同一條治理判定流程（不依賴 UI 點擊）
+
+### 與傳統分類器差異（最短版）
+- 傳統：像不像詐騙（相似度/分類）  
+- 我們：能不能進入決策鏈（治理有效性/責任可驗性）
+
+### Demo 收尾台詞（可直接講）
+**No decision without verifiable responsibility structure.**  
+沒有可驗證責任結構，就不應進入人的決策鏈。
+
+---
+
 ## 1. 為什麼不是一般防詐分類器
 
 多數防詐系統的核心是：
@@ -413,6 +450,29 @@ http://localhost:3000
 If you want to run without Bedrock credentials:
 
 LLM_PROVIDER=mock npm run dev
+
+5. CLI demo (for judges)
+
+Run web app locally first, then use CLI:
+
+npm run dev
+npm run demo:cli -- --case bank_alert
+
+You can also target deployed Amplify URL:
+
+DEMO_URL=https://<your-amplify-domain> npm run demo:cli -- --case gov_notice
+
+CLI output now includes:
+- Governance verdict summary
+- Narrator-layer statement (ZH/EN)
+- Responsibility-formula hash guarantee note + accountable contact
+
+UI Explain flow:
+- Click `查看完整結構（語言描述彈窗）`
+- Modal pops up and shows narrator-style typing text
+- Includes role disclaimer, case-specific narration, SCBKR explain lines in ZH/EN pairs, governance verdict, and responsibility-hash guarantee
+- Built-in local speech mode (female-voice priority, browser SpeechSynthesis, no cloud TTS required)
+- Elder mode also includes one-click voice playback for non-text users
 
 
 ---
