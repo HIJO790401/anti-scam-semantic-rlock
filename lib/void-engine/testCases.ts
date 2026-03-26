@@ -19,6 +19,10 @@ export const voidEngineTestCases = [
     name: "causal_only_boundary_blur_no_accountability",
     message:
       "這段訊息只有說因果，但邊界模糊，成本與依據不平衡，最後沒有誰承擔，直接VOID。1+1=2不是對不對，而是這句話在哪個場景對，對到哪裡失效。"
+  },
+  {
+    name: "probabilistic_escape_should_logic_zero",
+    message: "可能是官方流程，大家也許可以先照做看看，後續再說。"
   }
 ];
 

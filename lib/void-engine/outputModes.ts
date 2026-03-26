@@ -43,6 +43,7 @@ export function buildOutputModes(core: Omit<VoidEngineVerdict, "output_modes">, 
       raw_structured_view: {
         final_2_state: core.final_2_state,
         void_reason_code: core.void_reason_code,
+        gate_checks: core.gate_checks,
         error_type: core.error_type,
         error_layer: core.error_layer,
         revision_state: core.revision_state,

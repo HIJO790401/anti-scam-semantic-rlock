@@ -52,6 +52,12 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
     (features.hasResponsibilitySignal || features.hasCostBearerSignal);
   const probabilisticEscape = /(可能|也許|或許|大概|疑似|機率|probability|probably|maybe)/i.test(input.message);
   const whoWhyTrueGateFail = !hasWho || !hasWhy || !hasTrue;
+  const gateChecks = {
+    who_pass: hasWho,
+    why_pass: hasWhy,
+    true_pass: hasTrue,
+    probabilistic_escape: probabilisticEscape
+  };
   const decisionPush =
     features.hasSensitiveAction || features.hasUrgency || /(請完成|請確認|請點擊|請登入|否則|身份驗證|重新驗證|帳號驗證)/i.test(input.message);
 
@@ -160,6 +166,7 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
     error_layer: errorTyping.error_layer,
     void_reason_code: voidReasonCode,
     action_gate: actionGate,
+    gate_checks: gateChecks,
     reason_en: reasonEn,
     reason_zh: reasonZh,
     advice_zh: adviceZh,

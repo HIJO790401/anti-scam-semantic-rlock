@@ -164,6 +164,29 @@ export function ResultPanel({ result, mode, message }: Props) {
       </div>
 
       <SystemLogic result={result} />
+
+      {result.responsibility_hash && (
+        <div className="rounded-xl border border-trust-200 bg-trust-50/40 p-4">
+          <h3 className="text-sm font-semibold text-trust-700">責任結構指紋</h3>
+          <p className="mt-2 break-all rounded bg-white px-3 py-2 font-mono text-xs text-slate-800">{result.responsibility_hash}</p>
+          <p className="mt-3 text-sm text-slate-700">
+            {result.hash_explain ??
+              "此指紋不是網站外觀或單純文本雜湊，而是本系統依主體、因果、邊界、依據/成本、責任與最終治理判定生成的責任結構指紋。若後續網站、流程或主張改變，且責任結構與此次判決不一致，可直接判定 VOID。"}
+          </p>
+          {result.hash_basis && (
+            <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-700">
+              <p>
+                basis：state={result.hash_basis.final_state} / gate={result.hash_basis.action_gate} / risk={result.hash_basis.risk_level}
+              </p>
+              <p>reason_codes：{result.hash_basis.reason_codes.join(", ") || "none"}</p>
+              <p>
+                who/why/true：{result.hash_basis.gate_checks.who_pass ? "1" : "0"}/{result.hash_basis.gate_checks.why_pass ? "1" : "0"}/
+                {result.hash_basis.gate_checks.true_pass ? "1" : "0"}（escape={result.hash_basis.gate_checks.probabilistic_escape ? "1" : "0"}）
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }
