@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditRequestSchema, auditSchema } from "@/lib/schema";
 import {
-  auditWithBedrock,
   buildBedrockRequestUrl,
   resolveAwsRegion,
   resolveBedrockModelId,
@@ -9,15 +8,8 @@ import {
   resolveStrictMode
 } from "@/lib/bedrock";
 import { runFallbackAudit } from "@/lib/fallback";
-import { AuditResponse } from "@/lib/types";
 import { runVoidEngine } from "@/lib/void-engine";
 import { buildResponsibilityHashBasis, computeResponsibilityHash, RESPONSIBILITY_HASH_EXPLAIN } from "@/lib/responsibility-hash";
-
-function lowConfidence(result: AuditResponse): boolean {
-  const sensitiveMismatch =
-    /(點擊|連結|http|otp|密碼|登入|帳戶|匯款)/.test(result.reason_zh) === false && result.risk_level === "SAFE";
-  return result.fraud_score < 0.05 || sensitiveMismatch;
-}
 
 export async function POST(request: NextRequest) {
   const started = Date.now();
@@ -30,43 +22,31 @@ export async function POST(request: NextRequest) {
 
     const provider = process.env.LLM_PROVIDER || "bedrock";
     const strictMode = resolveStrictMode();
-    let result: AuditResponse;
 
-    if (provider === "bedrock") {
-      result = await auditWithBedrock(payload.message);
-    } else {
-      result = runFallbackAudit(payload.message, `mock:${provider}`);
-      result.meta.fallback_used = false;
-      result.meta.model = `mock:${provider}`;
-    }
-
-    let sourceForEngine = result;
-    if (provider === "bedrock" && strictMode) {
-      const deterministic = runFallbackAudit(payload.message, "deterministic-strict");
-      sourceForEngine = {
-        ...deterministic,
-        explain_mode: result.explain_mode,
-        meta: {
-          model: result.meta.model,
-          fallback_used: false
-        }
-      };
-    }
-
-    if (!strictMode && lowConfidence(result)) {
-      sourceForEngine = runFallbackAudit(payload.message, "low-confidence-fallback");
-      sourceForEngine.meta.model = `${result.meta.model}|fallback`;
-    }
+    // Restore-build mode: always deterministic fallback, no Bedrock invocation.
+    const deterministic = runFallbackAudit(payload.message, "deterministic-strict");
+    const sourceForEngine = {
+      ...deterministic,
+      meta: {
+        model: provider === "bedrock" ? "bedrock-disabled-fallback" : `mock:${provider}`,
+        fallback_used: true
+      }
+    };
 
     const parsedSource = auditSchema.parse(sourceForEngine);
     const engineVerdict = runVoidEngine(payload.message, { ...parsedSource, meta: sourceForEngine.meta });
     const hashBasis = buildResponsibilityHashBasis(engineVerdict);
+
     return NextResponse.json({
       ...engineVerdict,
       responsibility_hash: computeResponsibilityHash(hashBasis),
       hash_basis: hashBasis,
       hash_explain: RESPONSIBILITY_HASH_EXPLAIN,
-      meta: { ...sourceForEngine.meta, latency_ms: Date.now() - started }
+      meta: {
+        ...sourceForEngine.meta,
+        strict_mode: strictMode,
+        latency_ms: Date.now() - started
+      }
     });
   } catch (error) {
     const err = error as Error;
@@ -80,12 +60,11 @@ export async function POST(request: NextRequest) {
       }
     })();
     const awsRegion = resolveAwsRegion();
-    const strictMode = resolveStrictMode();
     const useSdkMode = process.env.BEDROCK_USE_SDK !== "false";
     const invokeUrl = process.env.BEDROCK_INVOKE_URL || "N/A";
     const requestUrl = useSdkMode ? buildBedrockRequestUrl(awsRegion, modelId) : invokeUrl;
 
-    console.error("[/api/audit] Bedrock/Audit failure", {
+    console.error("[/api/audit] restore-build fallback", {
       error_name: err?.name ?? "UnknownError",
       error_message: err?.message ?? "unknown",
       error_stack: err?.stack ?? "no-stack",
@@ -95,8 +74,8 @@ export async function POST(request: NextRequest) {
       resolved_model_id: modelId,
       aws_region: awsRegion,
       use_sdk_mode: useSdkMode,
-      credential_source: resolveCredentialSource(useSdkMode),
-      strict_mode: strictMode,
+      credential_source: resolveCredentialSource(),
+      strict_mode: resolveStrictMode(),
       request_url: requestUrl
     });
 
