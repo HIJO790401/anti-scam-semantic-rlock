@@ -14,7 +14,7 @@ SCBKR + R-Lock 不是一般的詐騙分類器，也不是聊天機器人。
 
 ---
 
-## 0. Hackathon 最終版自述（Gogolook 可直接貼）
+## 0. Hackathon 最終版自述
 
 ### 一句話定位
 **我們不是在判斷訊息「像不像詐騙」，而是在做「決策前責任結構審計」。**
@@ -45,7 +45,7 @@ SCBKR + R-Lock 不是一般的詐騙分類器，也不是聊天機器人。
 - 傳統：像不像詐騙（相似度/分類）  
 - 我們：能不能進入決策鏈（治理有效性/責任可驗性）
 
-### Demo 收尾台詞（可直接講）
+### Demo 收尾台詞
 **No decision without verifiable responsibility structure.**  
 沒有可驗證責任結構，就不應進入人的決策鏈。
 
