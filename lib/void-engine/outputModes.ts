@@ -18,8 +18,12 @@ export function buildOutputModes(core: Omit<VoidEngineVerdict, "output_modes">, 
   const finalWeak = elderPriority.length === 2 ? elderPriority : weakest.slice(0, 2);
 
   const hasContact = /(http|www\.|[a-z0-9-]+\.(tw|com|net|org)|客服|電話|網址|login|登入|驗證入口|\d{2,4}-\d{3,4}-\d{3,4})/i.test(message);
+  const logicZeroGate =
+    core.void_reason_code.includes("whoWhyTrueGateFail") || core.void_reason_code.includes("probabilisticEscape");
   const professionalGapNote =
-    core.final_2_state === "VOID_REVISION" || core.revision_state === "VOID_REVISION"
+    logicZeroGate
+      ? "命中 WHO+WHY+TRUE 決策閘門失敗或機率逃責語句；模型分數已歸零，不具決策資格。"
+      : core.final_2_state === "VOID_REVISION" || core.revision_state === "VOID_REVISION"
       ? "修正聲稱缺少 ERROR_TYPE / ERROR_LAYER / ERROR_BOUNDARY / ERROR_DEFINED_BY / ERROR_RESPONSIBILITY，且未說明 owner / timeline。"
       : core.final_2_state === "VOID_GOVERNANCE"
         ? "命中治理逃責語句：主體、範圍或責任承擔者未被具體定義。"
@@ -39,6 +43,7 @@ export function buildOutputModes(core: Omit<VoidEngineVerdict, "output_modes">, 
       raw_structured_view: {
         final_2_state: core.final_2_state,
         void_reason_code: core.void_reason_code,
+        gate_checks: core.gate_checks,
         error_type: core.error_type,
         error_layer: core.error_layer,
         revision_state: core.revision_state,
