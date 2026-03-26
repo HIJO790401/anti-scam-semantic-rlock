@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ModeSwitch } from "@/components/mode-switch";
+import { NarratorModal } from "@/components/narrator-modal";
 import { ResultPanel } from "@/components/result-panel";
 import { AuditResponse, UserMode } from "@/lib/types";
 import { demoCases, getNarratorCaseCopy } from "@/lib/ui";
@@ -13,7 +14,7 @@ export default function HomePage() {
   const [raw, setRaw] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [showExplain, setShowExplain] = useState(false);
+  const [showNarratorModal, setShowNarratorModal] = useState(false);
 
   const containerClass = useMemo(
     () => (mode === "elder" ? "mx-auto max-w-4xl space-y-6 p-4 text-lg" : "mx-auto max-w-5xl space-y-6 p-4"),
@@ -112,10 +113,16 @@ export default function HomePage() {
           </button>
           <button
             type="button"
-            onClick={() => setShowExplain((v) => !v)}
+            onClick={() => {
+              if (!result) {
+                setError("請先按「立即檢查」，再查看完整結構。");
+                return;
+              }
+              setShowNarratorModal(true);
+            }}
             className={`rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 ${mode === "elder" ? "px-8 py-4 text-xl" : "px-5 py-3 text-sm"}`}
           >
-            查看完整結構（SCBKR 解析）
+            查看完整結構（語言描述彈窗）
           </button>
         </div>
         {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
@@ -123,41 +130,13 @@ export default function HomePage() {
 
       {result && <ResultPanel result={result} mode={mode} message={message} />}
 
-      {result && showExplain && mode !== "elder" && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-trust-700">Explain Mode（SCBKR 解析）</h2>
-          <div className="mt-3 rounded-xl border border-trust-200 bg-trust-50/50 p-4 text-sm text-slate-800">
-            <p className="font-semibold text-trust-700">描述模型聲明 / Narrator Statement</p>
-            <p className="mt-2">我是描述模型，只負責把系統裁決翻成白話；決策與責任定義由 SCBKR + R-Lock + VOID Engine 承擔。</p>
-            <p className="mt-1 text-xs text-slate-600">
-              I only narrate system outcomes in plain language. Decision authority and accountability belong to the governance engine.
-            </p>
-          </div>
-          <ul className="mt-3 space-y-2 text-sm text-slate-700">
-            <li>Subject：{result.explain_mode.subject_analysis}</li>
-            <li>Cause：{result.explain_mode.cause_analysis}</li>
-            <li>Boundary：{result.explain_mode.boundary_analysis}</li>
-            <li>Basis & Cost Ground：{result.explain_mode.basis_analysis}</li>
-            <li>Responsibility：{result.explain_mode.responsibility_analysis}</li>
-            <li>R-Lock：{result.explain_mode.r_lock_triggered ? "責任不可驗，已觸發升級" : "未觸發"}</li>
-          </ul>
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800">
-            <p className="font-semibold text-slate-700">案例描述層（依示範案例動態生成）</p>
-            <p className="mt-2">{narrator.zh}</p>
-            <p className="mt-2 text-xs text-slate-600">{narrator.en}</p>
-          </div>
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-800">
-            <p className="font-semibold text-amber-800">責任公式雜湊聲明 / Responsibility-Formula Hash</p>
-            <p className="mt-2">
-              責任結構雜湊碼用於防止變體偷換：即便更換網址、話術或表面文案，只要責任結構公式無法對齊，本系統即視為不成立。
-              此流程可回放、可追責、可承擔且有邊界。
-            </p>
-            <p className="mt-2 text-xs text-slate-600">
-              如對責任公式與判定結果有疑慮，請洽專案負責人：沉靜流派工作室 許文耀先生。
-            </p>
-          </div>
-        </section>
-      )}
+      <NarratorModal
+        open={showNarratorModal}
+        onClose={() => setShowNarratorModal(false)}
+        result={result}
+        narratorZh={narrator.zh}
+        narratorEn={narrator.en}
+      />
 
       <section className="rounded-2xl border border-trust-100 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-trust-700">這不是在問「像不像詐騙」</h2>
