@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditRequestSchema, auditSchema } from "@/lib/schema";
-import { auditWithBedrock } from "@/lib/bedrock";
+import { auditWithBedrock, resolveBedrockModelId } from "@/lib/bedrock";
 import { runFallbackAudit } from "@/lib/fallback";
 import { AuditResponse } from "@/lib/types";
 import { runVoidEngine } from "@/lib/void-engine";
@@ -65,7 +65,13 @@ export async function POST(request: NextRequest) {
     const err = error as Error;
     const cause = err && "cause" in err ? (err as Error & { cause?: unknown }).cause : undefined;
     const causeObj = cause as { name?: string; message?: string; code?: string } | undefined;
-    const modelId = process.env.BEDROCK_MODEL_ID || "anthropic.claude-3-5-sonnet-20240620-v1:0";
+    const modelId = (() => {
+      try {
+        return resolveBedrockModelId();
+      } catch {
+        return "MISSING_BEDROCK_MODEL_ID";
+      }
+    })();
     const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "unknown";
     console.error("[/api/audit] Bedrock/Audit failure", {
       error_name: err?.name ?? "UnknownError",
