@@ -65,3 +65,53 @@ export function toElderOutput(result: AuditResponse, originalMessage: string): E
     safe_action: safeAction
   };
 }
+
+export function getNarratorCaseCopy(message: string): { key: string; zh: string; en: string } {
+  if (/(台灣商業銀行|銀行).*(重新驗證|驗證|連結|停用)/i.test(message)) {
+    return {
+      key: "bank_alert",
+      zh: "這則訊息以銀行名義要求限時驗證並引導點擊連結，屬於高壓操作型請求。重點不是它像不像官方，而是它是否提供可驗責任承接與可回放查核路徑。",
+      en: "This message uses a bank identity with urgent verification and link-click pressure. The key is not official tone, but whether verifiable accountability and replayable audit paths are provided."
+    };
+  }
+  if (/(健保|行政院).*(更新|失效|連結)/i.test(message)) {
+    return {
+      key: "nhi_alert",
+      zh: "這則訊息借用政策或健保語境要求你立即操作。若沒有明確責任窗口與成本承擔說明，即使語氣正式也不具決策資格。",
+      en: "This message borrows policy/NHI context to trigger immediate action. Without explicit responsibility channels and cost-bearing definitions, it is not decision-eligible."
+    };
+  }
+  if (/(包裹|物流|配送).*(身份確認|重新安排|verify|連結|http)/i.test(message)) {
+    return {
+      key: "logistics_alert",
+      zh: "這則訊息以物流異常催促身份驗證，常見於變體詐騙。若責任結構欄位無法對齊，系統會直接升級風險並阻斷執行。",
+      en: "This message pushes identity verification through logistics urgency, a common scam variant. If accountability-structure fields do not align, risk is escalated and execution is blocked."
+    };
+  }
+  if (/你明天有空嗎|付款流程|不明訊息/i.test(message)) {
+    return {
+      key: "unclear_message",
+      zh: "這類訊息不一定是詐騙，但資訊不足，不能直接進入決策流程。系統會標示缺口並要求補齊責任與依據。",
+      en: "This type is not always a scam, but it is structurally insufficient for direct decision flow. The system flags missing accountability and evidence fields first."
+    };
+  }
+  if (/(更新通知設定|需要協助再告知|安全通知)/i.test(message)) {
+    return {
+      key: "safe_notice",
+      zh: "這類通知偏中性、非敏感操作，風險通常較低；但仍建議透過既有官方管道二次確認，避免被變體混入。",
+      en: "This notice is neutral and non-sensitive, usually lower risk. Still, secondary verification through known official channels is recommended."
+    };
+  }
+  if (/(系統將於|進行維護|官方客服)/i.test(message)) {
+    return {
+      key: "official_maintenance",
+      zh: "這則公告具備時間邊界與官方客服線索，治理有效性相對較高；仍需確認責任承接與查證入口一致。",
+      en: "This maintenance notice includes clear time boundaries and official contact clues, indicating stronger governance validity, pending responsibility-route consistency checks."
+    };
+  }
+  return {
+    key: "generic",
+    zh: "此為描述模型依系統輸出產生的白話解釋。最終決策權與責任承擔不屬於語言模型，而屬於治理引擎。",
+    en: "This is narration generated from system outputs. Final decision authority and accountability belong to the governance engine, not the language model."
+  };
+}
