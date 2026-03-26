@@ -128,7 +128,9 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
         ? "此訊息命中治理逃責語句，未提供可追責框架，治理層判定無效。"
         : finalState === "VOID_REVISION"
           ? "此訊息提出修正聲稱，但未完整揭露錯誤型別與責任欄位，修訂聲稱無效。"
-          : input.source.reason_zh;
+          : logicZeroed
+            ? "未滿足 WHO+WHY+TRUE 決策閘門，或使用「可能」等機率逃責語句，邏輯歸零，禁止模型給分決策。"
+            : input.source.reason_zh;
 
   const reasonEn = logicZeroed
     ? "WHO+WHY+TRUE gate failed or probabilistic escape wording detected; logic is zeroed and model scoring is not decision-eligible."
@@ -138,7 +140,9 @@ export function computeFinalVerdict(input: VoidEngineInput): VoidEngineVerdict {
         ? "Governance-level responsibility framework is missing; statement is void under policy checks."
         : finalState === "VOID_REVISION"
           ? "Revision claim is void due to missing required error-definition fields."
-          : input.source.reason_en;
+          : logicZeroed
+            ? "WHO+WHY+TRUE gate failed or probabilistic escape wording detected; logic is zeroed and model scoring is not decision-eligible."
+            : input.source.reason_en;
 
   const adviceZh =
     actionGate === "BLOCK"
