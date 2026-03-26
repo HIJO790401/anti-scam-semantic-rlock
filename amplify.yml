@@ -4,6 +4,15 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        - |
+          cat > .env.production <<EOF
+          LLM_PROVIDER=${LLM_PROVIDER:-bedrock}
+          BEDROCK_USE_SDK=${BEDROCK_USE_SDK:-true}
+          BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID}
+          AWS_REGION=${AWS_REGION:-us-west-2}
+          DECISION_ENGINE_MODE=${DECISION_ENGINE_MODE:-strict}
+          BEDROCK_INVOKE_URL=${BEDROCK_INVOKE_URL}
+          EOF
     build:
       commands:
         - npm run build
