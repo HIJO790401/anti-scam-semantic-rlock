@@ -592,3 +592,39 @@ CLI demo 能在網路不穩或權限延遲時，仍完整展示：SCBKR、WHO+WH
 ### Q3：這樣是不是代表不能導入模型？
 不是。模型描述層可直接導入；治理決策層維持 deterministic。  
 也就是：**模型負責描述，系統負責決策與責任承擔**，兩層分離、可獨立演進。
+
+## 19. GitHub 展示頁（不連 AI）
+
+可以。這個專案已支援「純前端靜態展示模式」，可直接部署到 GitHub Pages。
+
+### 你會得到什麼
+- 保留目前 UI / SCBKR / VOID Engine 的展示流程。
+- 不呼叫 `/api/audit`、不需要 Bedrock、也不需要任何雲端金鑰。
+- 分析邏輯改由前端使用 deterministic fallback + VOID Engine 執行（適合展示與評審）。
+
+### 本地產生 GitHub Pages 靜態輸出
+```bash
+npm ci
+npm run build:github
+```
+
+完成後可部署 `out/` 目錄到 GitHub Pages。
+
+### 建議的 GitHub Actions（簡化版）
+1. 在 repo `Settings -> Pages` 設定來源為 `GitHub Actions`。
+2. workflow build 時執行 `npm ci && npm run build:github`。
+3. 發佈 `out/` 作為 Pages artifact。
+
+> 注意：GitHub Pages 是靜態託管，`/api/*` 不會存在；展示模式已內建避開 API 呼叫。
+> 補充：在一般部署（如 AWS）下，系統會優先走 `/api/audit`；只有 API 不可用時才會自動切到本地展示引擎，互動按鈕仍可使用。
+
+### 常見錯誤（你遇到的就是這個）
+如果 GitHub Pages 打開後不是 App，而像是 README 文字頁，通常是以下原因：
+1. **Pages 來源設成 branch/docs**（會顯示 repo 靜態檔），不是 GitHub Actions artifact。
+2. **basePath 設錯**，導致 JS/CSS 404，頁面看起來像「沒套樣式或內容錯亂」。
+
+建議：
+- `Settings -> Pages -> Source` 一律改成 **GitHub Actions**。
+- 使用 `.github/workflows/deploy-pages.yml` 直接發佈 `out/`。
+- 若你的 repo 名稱是 `username.github.io`，`GITHUB_PAGES_BASE_PATH` 要留空（根路徑）。
+- 若是專案頁（例如 `my-repo`），可留空讓系統自動使用 `/my-repo`。
