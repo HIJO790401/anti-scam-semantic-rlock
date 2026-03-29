@@ -6,6 +6,7 @@ import { NarratorModal } from "@/components/narrator-modal";
 import { ResultPanel } from "@/components/result-panel";
 import { AuditResponse, UserMode } from "@/lib/types";
 import { demoCases, getNarratorCaseCopy } from "@/lib/ui";
+import { runLocalAudit } from "@/lib/local-audit";
 
 export default function HomePage() {
   const [mode, setMode] = useState<UserMode>("standard");
@@ -21,12 +22,20 @@ export default function HomePage() {
     [mode]
   );
   const narrator = useMemo(() => getNarratorCaseCopy(message), [message]);
+  const isStaticShowcase = process.env.NEXT_PUBLIC_STATIC_SHOWCASE === "true";
 
   async function handleAudit() {
     if (!message.trim()) return;
     setLoading(true);
     setError("");
     try {
+      if (isStaticShowcase) {
+        const data = runLocalAudit(message);
+        setResult(data);
+        setRaw(JSON.stringify(data, null, 2));
+        return;
+      }
+
       const resp = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,6 +87,12 @@ export default function HomePage() {
       </header>
 
       <ModeSwitch value={mode} onChange={setMode} />
+
+      {isStaticShowcase && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          目前為 GitHub 展示模式（純前端靜態版）：分析流程使用內建 deterministic fallback + VOID Engine，未連接後端 API 或外部 AI 服務。
+        </section>
+      )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <label className="mb-2 block text-sm font-semibold text-slate-700">可疑訊息內容</label>
