@@ -616,3 +616,4 @@ npm run build:github
 3. 發佈 `out/` 作為 Pages artifact。
 
 > 注意：GitHub Pages 是靜態託管，`/api/*` 不會存在；展示模式已內建避開 API 呼叫。
+> 補充：在一般部署（如 AWS）下，系統會優先走 `/api/audit`；只有 API 不可用時才會自動切到本地展示引擎，互動按鈕仍可使用。

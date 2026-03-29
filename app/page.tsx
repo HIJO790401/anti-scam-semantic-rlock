@@ -30,7 +30,7 @@ export default function HomePage() {
     setError("");
     try {
       if (isStaticShowcase) {
-        const data = runLocalAudit(message);
+        const data = await runLocalAudit(message);
         setResult(data);
         setRaw(JSON.stringify(data, null, 2));
         return;
@@ -41,11 +41,19 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message })
       });
+
+      if (!resp.ok) {
+        throw new Error(`API failed: ${resp.status}`);
+      }
+
       const data = await resp.json();
       setResult(data);
       setRaw(JSON.stringify(data, null, 2));
     } catch {
-      setError("系統目前忙碌，請稍後再試。");
+      const data = await runLocalAudit(message);
+      setResult(data);
+      setRaw(JSON.stringify(data, null, 2));
+      setError("目前改用本地展示引擎（未連接後端 API）。");
     } finally {
       setLoading(false);
     }
