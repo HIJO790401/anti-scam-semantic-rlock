@@ -617,3 +617,14 @@ npm run build:github
 
 > 注意：GitHub Pages 是靜態託管，`/api/*` 不會存在；展示模式已內建避開 API 呼叫。
 > 補充：在一般部署（如 AWS）下，系統會優先走 `/api/audit`；只有 API 不可用時才會自動切到本地展示引擎，互動按鈕仍可使用。
+
+### 常見錯誤（你遇到的就是這個）
+如果 GitHub Pages 打開後不是 App，而像是 README 文字頁，通常是以下原因：
+1. **Pages 來源設成 branch/docs**（會顯示 repo 靜態檔），不是 GitHub Actions artifact。
+2. **basePath 設錯**，導致 JS/CSS 404，頁面看起來像「沒套樣式或內容錯亂」。
+
+建議：
+- `Settings -> Pages -> Source` 一律改成 **GitHub Actions**。
+- 使用 `.github/workflows/deploy-pages.yml` 直接發佈 `out/`。
+- 若你的 repo 名稱是 `username.github.io`，`GITHUB_PAGES_BASE_PATH` 要留空（根路徑）。
+- 若是專案頁（例如 `my-repo`），可留空讓系統自動使用 `/my-repo`。
