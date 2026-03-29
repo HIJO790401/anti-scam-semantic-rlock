@@ -22,7 +22,9 @@ export default function HomePage() {
     [mode]
   );
   const narrator = useMemo(() => getNarratorCaseCopy(message), [message]);
-  const isStaticShowcase = process.env.NEXT_PUBLIC_STATIC_SHOWCASE === "true";
+  const forceStaticShowcase = process.env.NEXT_PUBLIC_STATIC_SHOWCASE === "true";
+  const isGithubPagesHost = typeof window !== "undefined" && window.location.hostname.endsWith("github.io");
+  const isStaticShowcase = forceStaticShowcase || isGithubPagesHost;
 
   async function handleAudit() {
     if (!message.trim()) return;

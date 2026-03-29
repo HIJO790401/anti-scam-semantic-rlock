@@ -618,6 +618,12 @@ npm run build:github
 > 注意：GitHub Pages 是靜態託管，`/api/*` 不會存在；展示模式已內建避開 API 呼叫。
 > 補充：在一般部署（如 AWS）下，系統會優先走 `/api/audit`；只有 API 不可用時才會自動切到本地展示引擎，互動按鈕仍可使用。
 
+
+### 最簡單做法（你要的：main 直接部署）
+- 這個 repo 已提供 `.github/workflows/deploy-pages.yml`，**推到 `main` 就會自動部署 GitHub Pages**。
+- AWS 端不受影響：正式環境仍優先走 `/api/audit`。
+- 只有在 GitHub Pages 網域（`*.github.io`）或 API 不可用時，才會自動切本地 demo 引擎。
+
 ### 常見錯誤（你遇到的就是這個）
 如果 GitHub Pages 打開後不是 App，而像是 README 文字頁，通常是以下原因：
 1. **Pages 來源設成 branch/docs**（會顯示 repo 靜態檔），不是 GitHub Actions artifact。
