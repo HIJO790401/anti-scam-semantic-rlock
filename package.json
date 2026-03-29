@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "demo:cli": "bash scripts/demo-cli.sh"
+    "demo:cli": "bash scripts/demo-cli.sh",
+    "build:github": "STATIC_EXPORT=true GITHUB_PAGES=true NEXT_PUBLIC_STATIC_SHOWCASE=true next build"
   },
   "dependencies": {
     "next": "15.1.6",
