@@ -1,4 +1,3 @@
-import { createHash } from "crypto";
 import { ResponsibilityHashBasis } from "@/lib/types";
 import { VoidEngineVerdict } from "@/lib/void-engine/types";
 
@@ -27,6 +26,22 @@ function stableSort(value: unknown): unknown {
 
 function stableStringify(value: unknown): string {
   return JSON.stringify(stableSort(value));
+}
+
+function fallbackHashHex(input: string): string {
+  // Deterministic non-crypto fallback for environments without Web Crypto.
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  for (let i = 0; i < input.length; i += 1) {
+    const code = input.charCodeAt(i);
+    h1 ^= code;
+    h1 = Math.imul(h1, 16777619);
+    h2 ^= code;
+    h2 = Math.imul(h2, 2246822519);
+  }
+  const a = (h1 >>> 0).toString(16).padStart(8, "0");
+  const b = (h2 >>> 0).toString(16).padStart(8, "0");
+  return `${a}${b}${a}${b}${a}${b}${a}${b}`;
 }
 
 export function buildResponsibilityHashBasis(verdict: VoidEngineVerdict): ResponsibilityHashBasis {
@@ -58,8 +73,18 @@ export function buildResponsibilityHashBasis(verdict: VoidEngineVerdict): Respon
   };
 }
 
-export function computeResponsibilityHash(basis: ResponsibilityHashBasis): string {
-  return createHash("sha256").update(stableStringify(basis)).digest("hex");
+export async function computeResponsibilityHashAsync(basis: ResponsibilityHashBasis): Promise<string> {
+  const stable = stableStringify(basis);
+
+  if (globalThis.crypto?.subtle) {
+    const bytes = new TextEncoder().encode(stable);
+    const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  return fallbackHashHex(stable);
 }
 
 export const RESPONSIBILITY_HASH_EXPLAIN =
