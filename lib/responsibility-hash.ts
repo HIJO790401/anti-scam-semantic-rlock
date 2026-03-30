@@ -87,19 +87,5 @@ export async function computeResponsibilityHashAsync(basis: ResponsibilityHashBa
   return fallbackHashHex(stable);
 }
 
-export async function computeResponsibilityHashAsync(basis: ResponsibilityHashBasis): Promise<string> {
-  const stable = stableStringify(basis);
-
-  if (globalThis.crypto?.subtle) {
-    const bytes = new TextEncoder().encode(stable);
-    const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
-    return Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  }
-
-  return computeResponsibilityHash(basis);
-}
-
 export const RESPONSIBILITY_HASH_EXPLAIN =
   "此指紋不是網站外觀或單純文本雜湊，而是本系統依主體、因果、邊界、依據/成本、責任與最終治理判定生成的責任結構指紋。若後續網站、流程或主張改變，且責任結構與此次判決不一致，可直接判定 VOID。";

@@ -161,6 +161,7 @@ export default function HomePage() {
         result={result}
         narratorZh={narrator.zh}
         narratorEn={narrator.en}
+        mode={mode}
       />
 
       <section className="rounded-2xl border border-trust-100 bg-white p-5 shadow-sm">

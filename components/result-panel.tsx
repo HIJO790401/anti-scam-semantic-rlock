@@ -95,6 +95,7 @@ function SystemLogic({ result }: { result: AuditResponse }) {
 
 export function ResultPanel({ result, mode, message }: Props) {
   const theme = riskMeta(result.risk_level);
+  const isProfessional = mode === "professional";
 
   if (mode === "elder") {
     const elder = toElderOutput(result, message);
@@ -153,6 +154,15 @@ export function ResultPanel({ result, mode, message }: Props) {
     );
   }
 
+  const professionalRaw = result.output_modes?.professional?.raw_structured_view ?? {
+    final_2_state: result.final_2_state,
+    action_gate: result.action_gate,
+    void_reason_code: result.void_reason_code,
+    gate_checks: result.gate_checks,
+    revision_state: result.revision_state,
+    scbkr: result.scbkr
+  };
+
   return (
     <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className={`rounded-xl border-l-8 p-4 ${theme.className}`}>
@@ -164,7 +174,7 @@ export function ResultPanel({ result, mode, message }: Props) {
           <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold">{theme.badge}</span>
         </div>
         <p className="mt-2 text-sm">{result.reason_zh}</p>
-        {mode === "professional" && <p className="mt-1 text-xs text-slate-700">EN: {result.reason_en}</p>}
+        {isProfessional && <p className="mt-1 text-xs text-slate-700">EN: {result.reason_en}</p>}
       </div>
 
       <div className="rounded-xl bg-slate-100 p-4">
@@ -180,12 +190,40 @@ export function ResultPanel({ result, mode, message }: Props) {
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="mb-2 text-sm font-semibold text-slate-700">SCBKR 哪裡缺失（LLM 解釋）</h3>
-        <MissingReasons result={result} />
-      </div>
+      {isProfessional ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">SCBKR 缺口（治理審計說明）</h3>
+          <MissingReasons result={result} />
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">這則訊息主要缺口</h3>
+          <MissingReasons result={result} />
+        </div>
+      )}
 
-      <SystemLogic result={result} />
+      {isProfessional ? (
+        <>
+          <SystemLogic result={result} />
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <h3 className="text-sm font-semibold text-slate-700">治理決策鏈（Professional Trace）</h3>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">
+              <li>SCBKR 結構評分：S/C/B/K/R</li>
+              <li>WHO + WHY + TRUE Gate：判斷可否進入決策鏈</li>
+              <li>VOID Engine：分類 VOID_CLAIM / VOID_GOVERNANCE / VOID_REVISION</li>
+              <li>Action Gate：輸出 ALLOW / WARN / BLOCK</li>
+              <li>Responsibility Hash：固化本次責任結構指紋</li>
+            </ol>
+            <p className="mt-3 text-xs text-slate-600">
+              Professional mode 強調規則鏈、命中原因與責任回放；Standard mode 只保留一般使用者可行動資訊。
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-900 p-4 text-xs text-slate-100">
+            <h3 className="text-sm font-semibold text-slate-100">Professional Raw Structured View</h3>
+            <pre className="mt-2 overflow-auto whitespace-pre-wrap">{JSON.stringify(professionalRaw, null, 2)}</pre>
+          </div>
+        </>
+      ) : null}
 
       {result.responsibility_hash && (
         <div className="rounded-xl border border-trust-200 bg-trust-50/40 p-4">
@@ -195,7 +233,7 @@ export function ResultPanel({ result, mode, message }: Props) {
             {result.hash_explain ??
               "此指紋不是網站外觀或單純文本雜湊，而是本系統依主體、因果、邊界、依據/成本、責任與最終治理判定生成的責任結構指紋。若後續網站、流程或主張改變，且責任結構與此次判決不一致，可直接判定 VOID。"}
           </p>
-          {result.hash_basis && (
+          {isProfessional && result.hash_basis && (
             <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-700">
               <p>
                 basis：state={result.hash_basis.final_state} / gate={result.hash_basis.action_gate} / risk={result.hash_basis.risk_level}
