@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AuditResponse } from "@/lib/types";
+import { AuditResponse, UserMode } from "@/lib/types";
 import { speakText, stopSpeaking } from "@/lib/tts";
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   result: AuditResponse | null;
   narratorZh: string;
   narratorEn: string;
+  mode: UserMode;
 }
 
 function explainToEnglish(text: string): string {
@@ -32,7 +33,7 @@ function explainToEnglish(text: string): string {
   return "Governance explanation generated from SCBKR fields; verify through official channels before acting.";
 }
 
-export function NarratorModal({ open, onClose, result, narratorZh, narratorEn }: Props) {
+export function NarratorModal({ open, onClose, result, narratorZh, narratorEn, mode }: Props) {
   const fullText = useMemo(() => {
     if (!result) return "";
     const explainLines = [
@@ -49,6 +50,19 @@ export function NarratorModal({ open, onClose, result, narratorZh, narratorEn }:
       `R-Lock（中文）: ${result.explain_mode.r_lock_triggered ? "責任不可驗，已觸發升級。" : "責任鎖未觸發。"}`,
       `R-Lock (EN): ${result.explain_mode.r_lock_triggered ? "Responsibility is not verifiable; R-Lock escalation is triggered." : "R-Lock is not triggered."}`
     ];
+    const professionalFormulaBlock =
+      mode === "professional"
+        ? [
+            "",
+            "【Professional 展示公式（示意）】",
+            "GateScore = WHO × WHY × TRUE",
+            "RiskFloor = max(R-Lock, GovernanceGate, ClaimValidity)",
+            "FinalAction = f(S,C,B,K,R, GateScore, void_reason_code)",
+            "註：核心責任公式為治理設計資產，沒有 EX(Y)=PI 演算法與參數集合，無法被外部完整模仿。",
+            "如需研究合作或技術授權，請聯絡專案負責人。"
+          ]
+        : [];
+
     return [
       "【描述模型聲明】",
       "我是語言描述模型，只負責把系統裁決翻成白話；決策與責任定義由 SCBKR + R-Lock + VOID Engine 承擔。",
@@ -74,10 +88,11 @@ export function NarratorModal({ open, onClose, result, narratorZh, narratorEn }:
       "【責任公式雜湊保證】",
       "即便他人更換網址、說法或表面文案，只要責任結構公式無法對齊，本系統即視為不成立。",
       "此流程可回放、可追責、可承擔且有邊界。",
+      ...professionalFormulaBlock,
       "",
       "如對責任公式與判定結果有疑慮，請洽專案負責人：沉靜流派工作室 許文耀先生。"
     ].join("\n");
-  }, [narratorEn, narratorZh, result]);
+  }, [mode, narratorEn, narratorZh, result]);
 
   const [typedText, setTypedText] = useState("");
 
