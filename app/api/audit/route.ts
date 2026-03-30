@@ -9,7 +9,7 @@ import {
 } from "@/lib/bedrock";
 import { runFallbackAudit } from "@/lib/fallback";
 import { runVoidEngine } from "@/lib/void-engine";
-import { buildResponsibilityHashBasis, computeResponsibilityHash, RESPONSIBILITY_HASH_EXPLAIN } from "@/lib/responsibility-hash";
+import { buildResponsibilityHashBasis, computeResponsibilityHashAsync, RESPONSIBILITY_HASH_EXPLAIN } from "@/lib/responsibility-hash";
 
 export async function POST(request: NextRequest) {
   const started = Date.now();
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ...engineVerdict,
-      responsibility_hash: computeResponsibilityHash(hashBasis),
+      responsibility_hash: await computeResponsibilityHashAsync(hashBasis),
       hash_basis: hashBasis,
       hash_explain: RESPONSIBILITY_HASH_EXPLAIN,
       meta: {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         ...engineVerdict,
-        responsibility_hash: computeResponsibilityHash(hashBasis),
+        responsibility_hash: await computeResponsibilityHashAsync(hashBasis),
         hash_basis: hashBasis,
         hash_explain: RESPONSIBILITY_HASH_EXPLAIN,
         meta: { ...fallback.meta, latency_ms: Date.now() - started }
