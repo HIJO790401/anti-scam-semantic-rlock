@@ -1,0 +1,44 @@
+name: Sync docs/ for Branch Pages
+
+on:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "docs/**"
+
+permissions:
+  contents: write
+
+jobs:
+  sync-docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build static export
+        run: npm run build:github
+
+      - name: Sync out/ -> docs/
+        run: |
+          rm -rf docs
+          mkdir -p docs
+          cp -R out/. docs/
+          touch docs/.nojekyll
+
+      - name: Commit docs update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs
+          git diff --cached --quiet || git commit -m "chore: sync docs for branch pages"
+          git push
