@@ -624,6 +624,11 @@ npm run build:github
 - AWS 端不受影響：正式環境仍優先走 `/api/audit`。
 - 只有在 GitHub Pages 網域（`*.github.io`）或 API 不可用時，才會自動切本地 demo 引擎。
 
+
+### 保險機制（避免首頁掉回 README）
+- repo 另有 `sync-docs-pages.yml`，會在 `main` push 後自動把 `out/` 同步到 `docs/`。
+- 如果你的 Pages 來源設成 `Deploy from a branch (main / docs)`，也能正確顯示 App，不會落回 README 頁。
+
 ### 常見錯誤（你遇到的就是這個）
 如果 GitHub Pages 打開後不是 App，而像是 README 文字頁，通常是以下原因：
 1. **Pages 來源設成 branch/docs**（會顯示 repo 靜態檔），不是 GitHub Actions artifact。
